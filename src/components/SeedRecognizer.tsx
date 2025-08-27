@@ -56,9 +56,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [possibleSeeds, setPossibleSeeds] = useState<SeedInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showContextMenu, setShowContextMenu] = useState(false);
-  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
-  const [rightClickedPoi, setRightClickedPoi] = useState<POI | null>(null);
   const [finalSeed, setFinalSeed] = useState<SeedInfo | null>(null);
   const [cvClassificationData, setCvClassificationData] = useState<CVClassificationData | null>(null);
   const [mapData, setMapData] = useState<MapData | null>(null);
@@ -66,7 +63,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [poiImages, setPoiImages] = useState<Record<string, HTMLImageElement>>({});
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const CANVAS_SIZE = 768;
   const ICON_SIZE = 38;
@@ -297,7 +293,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }) || null;
   };
 
-  // Handle canvas click (left click for church) - auto filter after each click
+  // Handle canvas click (left click for church toggle)
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!selectedMap || !selectedNightlord) {
       setError('请先选择地图和Nightlord');
@@ -313,22 +309,20 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     if (poi) {
       const currentState = poiStates[poi.id];
       
-      // Left click toggles church state
+      // Left click logic: non-church -> church, church -> dot
       if (currentState === 'church') {
-        // If already church, reset to dot
+        // If already church, reset to dot (empty)
         setPoiStates(prev => {
           const newStates = { ...prev, [poi.id]: 'dot' as POIState };
-          // Use callback to ensure we have the latest state when filtering
           setTimeout(() => {
             updateSeedFilteringWithStates(newStates);
           }, 0);
           return newStates;
         });
       } else {
-        // Mark as church
+        // If not church (dot, mage, village, other, unknown), set to church
         setPoiStates(prev => {
           const newStates = { ...prev, [poi.id]: 'church' as POIState };
-          // Use callback to ensure we have the latest state when filtering
           setTimeout(() => {
             updateSeedFilteringWithStates(newStates);
           }, 0);
@@ -338,7 +332,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   };
 
-  // Handle canvas right click - auto filter after each selection
+  // Handle canvas right click (cycle through mage -> village -> dot)
   const handleCanvasContextMenu = (event: React.MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
 
@@ -354,31 +348,27 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     const poi = findClickedPoi(pos.x, pos.y);
 
     if (poi) {
-      setRightClickedPoi(poi);
-      // Get the canvas position relative to the viewport
-      const canvasRect = canvas.getBoundingClientRect();
-      setContextMenuPos({ 
-        x: event.clientX, 
-        y: event.clientY 
-      });
-      setShowContextMenu(true);
-    }
-  };
+      const currentState = poiStates[poi.id];
+      let newState: POIState;
 
-  // Handle POI type selection from context menu - auto filter after each selection
-  const handlePoiTypeSelect = (type: POIState) => {
-    if (rightClickedPoi) {
+      // Right click cycle logic: dot/church -> mage, mage -> village, village -> dot
+      if (currentState === 'mage') {
+        newState = 'village';
+      } else if (currentState === 'village') {
+        newState = 'dot';
+      } else {
+        // dot, church, other, unknown -> mage
+        newState = 'mage';
+      }
+
       setPoiStates(prev => {
-        const newStates = { ...prev, [rightClickedPoi.id]: type };
-        // Use callback to ensure we have the latest state when filtering
+        const newStates = { ...prev, [poi.id]: newState };
         setTimeout(() => {
           updateSeedFilteringWithStates(newStates);
         }, 0);
         return newStates;
       });
     }
-    setShowContextMenu(false);
-    setRightClickedPoi(null);
   };
 
   // Reset map
@@ -858,18 +848,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   }, [selectedMap, currentPois, finalSeed, showCompleteMap, poiStates, loadImage, drawPoi, CANVAS_SIZE]);
 
-  // Hide context menu when clicking elsewhere
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
-        setShowContextMenu(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
   return (
     <div className="container mx-auto py-8 px-4">
       <Card className="max-w-6xl mx-auto">
@@ -923,14 +901,14 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           {selectedMap && selectedNightlord && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-800 mb-2">使用说明</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="w-4 h-4 bg-orange-500 rounded-full"></span>
-                  <span><strong>左键点击</strong>橙色圆点标记/取消Church</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-4 h-4 bg-purple-500 rounded-full"></span>
-                  <span><strong>右键点击</strong>选择Mage Tower或Village</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-4 h-4 bg-orange-500 rounded-full"></span>
+                    <span><strong>左键</strong>：选择教堂</span>
+                    <span className="w-4 h-4 bg-purple-500 rounded-full"></span>
+                    <span><strong>右键</strong>：选择法师塔或村庄</span>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button onClick={resetMap} variant="outline" size="sm">
@@ -938,9 +916,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-blue-600 mt-2">
-                提示：点击POI后会自动筛选种子，当只剩一个匹配结果时会自动显示识别结果
-              </p>
             </div>
           )}
 
@@ -956,47 +931,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                 className={`border border-gray-300 ${showCompleteMap ? 'cursor-default' : 'cursor-crosshair'}`}
                 style={{ maxWidth: '100%', height: 'auto' }}
               />
-
-
-              {/* Context Menu */}
-              {showContextMenu && !showCompleteMap && (
-                <div
-                  ref={contextMenuRef}
-                  className="fixed bg-white border border-gray-300 rounded shadow-lg py-2 z-50"
-                  style={{
-                    left: `${contextMenuPos.x}px`,
-                    top: `${contextMenuPos.y}px`,
-                  }}
-                >
-                  <button
-                    onClick={() => handlePoiTypeSelect('mage')}
-                    className="flex w-full px-4 py-2 text-left hover:bg-gray-100 items-center space-x-2"
-                  >
-                    <img src="/poi-assets/mage-tower.png" alt="Mage" className="w-4 h-4" />
-                    <span>🧙 Sorcerer's Rise</span>
-                  </button>
-                  <button
-                    onClick={() => handlePoiTypeSelect('village')}
-                    className="flex w-full px-4 py-2 text-left hover:bg-gray-100 items-center space-x-2"
-                  >
-                    <img src="/poi-assets/village.png" alt="Village" className="w-4 h-4" />
-                    <span>🏘️ Village</span>
-                  </button>
-                  <button
-                    onClick={() => handlePoiTypeSelect('other')}
-                    className="block w-full px-4 py-2 text-left hover:bg-gray-100"
-                  >
-                    ❓ Other POI
-                  </button>
-                  <hr className="my-1" />
-                  <button
-                    onClick={() => handlePoiTypeSelect('dot')}
-                    className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-600"
-                  >
-                    ↶ 取消标记
-                  </button>
-                </div>
-              )}
 
             </div>
           </div>
