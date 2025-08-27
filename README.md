@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Night Reign Seed Map Generator
 
-## Getting Started
+一个基于 Next.js 和 React 的地图生成器应用，使用 Tailwind CSS 和 shadcn/ui 组件库构建。
 
-First, run the development server:
+## 功能特性
+
+- 🗺️ **地图生成**: 输入地图ID即可生成对应的游戏地图
+- 🎨 **现代化UI**: 使用 Tailwind CSS 和 shadcn/ui 构建的美观界面
+- 📱 **响应式设计**: 支持桌面和移动设备
+- ⚡ **高性能**: 基于 Next.js 15 的现代化架构
+- 🧩 **组件化**: 模块化的组件结构，易于维护和扩展
+
+## 技术栈
+
+- **框架**: Next.js 15 (App Router)
+- **语言**: TypeScript
+- **样式**: Tailwind CSS
+- **UI组件**: shadcn/ui
+- **图标**: Lucide React
+
+## 项目结构
+
+```
+src/
+├── app/
+│   ├── globals.css          # 全局样式
+│   ├── layout.tsx           # 应用布局
+│   └── page.tsx             # 主页面
+└── components/
+    ├── ui/                  # shadcn/ui 组件
+    │   ├── button.tsx
+    │   ├── input.tsx
+    │   ├── card.tsx
+    │   ├── label.tsx
+    │   └── alert.tsx
+    ├── MapGenerator.tsx     # 主生成器组件
+    ├── MapInput.tsx         # 输入组件
+    ├── MapCanvas.tsx        # Canvas 显示组件
+    └── MapStatus.tsx        # 状态显示组件
+public/
+├── maps.json               # 地图数据
+└── static/                 # 地图资源图片
+```
+
+## 快速开始
+
+### 环境要求
+
+- Node.js 18+
+- npm 或 yarn 或 pnpm
+
+### 安装依赖
+
+```bash
+npm install
+# 或
+yarn install
+# 或
+pnpm install
+```
+
+### 运行开发服务器
 
 ```bash
 npm run dev
-# or
+# 或
 yarn dev
-# or
+# 或
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 [http://localhost:3000](http://localhost:3000) 查看应用。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 构建生产版本
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+# 或
+yarn build
+yarn start
+# 或
+pnpm build
+pnpm start
+```
 
-## Learn More
+## 使用说明
 
-To learn more about Next.js, take a look at the following resources:
+1. 在地图ID输入框中输入有效的地图ID（如 0, 1, 2 等）
+2. 点击"生成地图"按钮
+3. 等待地图生成完成
+4. 查看生成的地图图像，包含所有游戏元素和标注
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 组件说明
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### MapGenerator
+主组件，负责整体业务逻辑和状态管理。
 
-## Deploy on Vercel
+### MapInput
+输入组件，包含地图ID输入框和生成按钮。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### MapCanvas
+Canvas 显示组件，用于渲染生成的地图。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### MapStatus
+状态显示组件，显示加载状态和错误信息。
+
+## 部署
+
+推荐使用 Vercel 进行部署：
+
+1. 推送代码到 GitHub
+2. 在 Vercel 中导入项目
+3. 自动部署完成
+
+## 许可证
+
+MIT License
