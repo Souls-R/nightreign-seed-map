@@ -60,6 +60,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [cvClassificationData, setCvClassificationData] = useState<CVClassificationData | null>(null);
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [showCompleteMap, setShowCompleteMap] = useState(false);
+  const [isGeneratingMap, setIsGeneratingMap] = useState(false);
   const [poiImages, setPoiImages] = useState<Record<string, HTMLImageElement>>({});
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -376,6 +377,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     setPoiStates(initializePoiStates(currentPois));
     setFinalSeed(null);
     setShowCompleteMap(false);
+    setIsGeneratingMap(false);
     setError('');
     setPossibleSeeds([]);
     
@@ -425,14 +427,19 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const generateCompleteMap = useCallback(async (seedId: number) => {
     if (!mapData || !mapData.maps[seedId.toString()]) {
       setError('无法找到种子的地图数据');
+      setIsGeneratingMap(false);
       return;
     }
 
     try {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      // Create a temporary canvas for background rendering
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) {
+        setError('无法创建临时画布');
+        setIsGeneratingMap(false);
+        return;
+      }
 
       const mapInfo = mapData.maps[seedId.toString()];
       const backgroundName = `background_${mapInfo.Special}.png`;
@@ -441,20 +448,20 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       const backgroundImg = await loadImage(`/static/${backgroundName}`);
 
       // Set canvas size to match original image
-      canvas.width = backgroundImg.width;
-      canvas.height = backgroundImg.height;
+      tempCanvas.width = backgroundImg.width;
+      tempCanvas.height = backgroundImg.height;
 
       // Draw background
-      ctx.drawImage(backgroundImg, 0, 0);
+      tempCtx.drawImage(backgroundImg, 0, 0);
 
       // Draw NightLord
       if (mapInfo.NightLord !== undefined && mapInfo.NightLord !== null) {
         try {
           const nightlordImg = await loadImage(`/static/nightlord_${mapInfo.NightLord}.png`);
-          const previousCompositeOperation = ctx.globalCompositeOperation;
-          ctx.globalCompositeOperation = 'lighter';
-          ctx.drawImage(nightlordImg, 0, 0);
-          ctx.globalCompositeOperation = previousCompositeOperation;
+          const previousCompositeOperation = tempCtx.globalCompositeOperation;
+          tempCtx.globalCompositeOperation = 'lighter';
+          tempCtx.drawImage(nightlordImg, 0, 0);
+          tempCtx.globalCompositeOperation = previousCompositeOperation;
         } catch (error) {
           console.warn(`无法加载NightLord图片`);
         }
@@ -465,10 +472,10 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       const combinedValue = treasureValue * 10 + mapInfo.Special;
       try {
         const treasureImg = await loadImage(`/static/treasure_${combinedValue}.png`);
-        const previousCompositeOperation = ctx.globalCompositeOperation;
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(treasureImg, 0, 0);
-        ctx.globalCompositeOperation = previousCompositeOperation;
+        const previousCompositeOperation = tempCtx.globalCompositeOperation;
+        tempCtx.globalCompositeOperation = 'source-over';
+        tempCtx.drawImage(treasureImg, 0, 0);
+        tempCtx.globalCompositeOperation = previousCompositeOperation;
       } catch (error) {
         console.warn(`无法加载Treasure图片`);
       }
@@ -477,10 +484,10 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       if (mapInfo.RotRew_500 !== 0) {
         try {
           const rotrewImg = await loadImage(`/static/RotRew_${mapInfo.RotRew_500}.png`);
-          const previousCompositeOperation = ctx.globalCompositeOperation;
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.drawImage(rotrewImg, 0, 0);
-          ctx.globalCompositeOperation = previousCompositeOperation;
+          const previousCompositeOperation = tempCtx.globalCompositeOperation;
+          tempCtx.globalCompositeOperation = 'source-over';
+          tempCtx.drawImage(rotrewImg, 0, 0);
+          tempCtx.globalCompositeOperation = previousCompositeOperation;
         } catch (error) {
           console.warn(`无法加载RotRew图片`);
         }
@@ -489,10 +496,10 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       // Draw Start
       try {
         const startImg = await loadImage(`/static/Start_${mapInfo.Start_190}.png`);
-        const previousCompositeOperation = ctx.globalCompositeOperation;
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(startImg, 0, 0);
-        ctx.globalCompositeOperation = previousCompositeOperation;
+        const previousCompositeOperation = tempCtx.globalCompositeOperation;
+        tempCtx.globalCompositeOperation = 'source-over';
+        tempCtx.drawImage(startImg, 0, 0);
+        tempCtx.globalCompositeOperation = previousCompositeOperation;
       } catch (error) {
         console.warn(`无法加载Start图片`);
       }
@@ -507,7 +514,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
               const [x, y] = coord;
               const drawX = x - constructImg.width / 2;
               const drawY = y - constructImg.height / 2;
-              ctx.drawImage(constructImg, drawX, drawY);
+              tempCtx.drawImage(constructImg, drawX, drawY);
             }
           } catch (error) {
             console.warn(`无法加载建筑图片 Construct_${construct.type}.png`);
@@ -525,7 +532,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           const [x, y] = mapData.coordinates[day1Loc];
           const drawX = x - nightCircleImg.width / 2;
           const drawY = y - nightCircleImg.height / 2;
-          ctx.drawImage(nightCircleImg, drawX, drawY);
+          tempCtx.drawImage(nightCircleImg, drawX, drawY);
         } catch (error) {
           console.warn('无法加载night_circle图片');
         }
@@ -537,7 +544,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           const [x, y] = mapData.coordinates[day2Loc];
           const drawX = x - nightCircleImg.width / 2;
           const drawY = y - nightCircleImg.height / 2;
-          ctx.drawImage(nightCircleImg, drawX, drawY);
+          tempCtx.drawImage(nightCircleImg, drawX, drawY);
         } catch (error) {
           console.warn('无法加载night_circle图片');
         }
@@ -548,43 +555,43 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         const [x, y] = mapData.coordinates[day1Loc];
         if (mapData.names && mapData.names[mapInfo.Day1Boss.toString()]) {
           const text = "DAY1 " + mapData.names[mapInfo.Day1Boss.toString()];
-          ctx.fillStyle = '#781EF0';
-          ctx.font = '95px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.font = '95px Arial';
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
 
           // Add text shadow
-          ctx.fillStyle = 'white';
-          ctx.fillText(text, x-3, y-3);
-          ctx.fillText(text, x-1, y-1);
-          ctx.fillStyle = 'black';
-          ctx.fillText(text, x+1, y+1);
-          ctx.fillText(text, x+3, y+3);
-          ctx.fillText(text, x+5, y+5);
-          ctx.fillText(text, x+7, y+7);
+          tempCtx.fillStyle = 'white';
+          tempCtx.fillText(text, x-3, y-3);
+          tempCtx.fillText(text, x-1, y-1);
+          tempCtx.fillStyle = 'black';
+          tempCtx.fillText(text, x+1, y+1);
+          tempCtx.fillText(text, x+3, y+3);
+          tempCtx.fillText(text, x+5, y+5);
+          tempCtx.fillText(text, x+7, y+7);
 
-          ctx.fillStyle = '#781EF0';
-          ctx.fillText(text, x, y);
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.fillText(text, x, y);
         }
 
         if (mapInfo.extra1 !== -1 && mapData.names && mapData.names[mapInfo.extra1.toString()]) {
           const extraText = mapData.names[mapInfo.extra1.toString()];
-          ctx.fillStyle = '#781EF0';
-          ctx.font = '95px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.font = '95px Arial';
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
 
-          ctx.fillStyle = 'white';
-          ctx.fillText(extraText, x-3, y+100);
-          ctx.fillText(extraText, x-1, y+100);
-          ctx.fillStyle = 'black';
-          ctx.fillText(extraText, x+1, y+100);
-          ctx.fillText(extraText, x+3, y+100);
-          ctx.fillText(extraText, x+5, y+100);
-          ctx.fillText(extraText, x+7, y+100);
+          tempCtx.fillStyle = 'white';
+          tempCtx.fillText(extraText, x-3, y+100);
+          tempCtx.fillText(extraText, x-1, y+100);
+          tempCtx.fillStyle = 'black';
+          tempCtx.fillText(extraText, x+1, y+100);
+          tempCtx.fillText(extraText, x+3, y+100);
+          tempCtx.fillText(extraText, x+5, y+100);
+          tempCtx.fillText(extraText, x+7, y+100);
 
-          ctx.fillStyle = '#781EF0';
-          ctx.fillText(extraText, x, y+100);
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.fillText(extraText, x, y+100);
         }
       }
 
@@ -592,42 +599,42 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         const [x, y] = mapData.coordinates[day2Loc];
         if (mapData.names && mapData.names[mapInfo.Day2Boss.toString()]) {
           const text = "DAY2 " + mapData.names[mapInfo.Day2Boss.toString()];
-          ctx.fillStyle = '#781EF0';
-          ctx.font = '95px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.font = '95px Arial';
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
 
-          ctx.fillStyle = 'white';
-          ctx.fillText(text, x-3, y-3);
-          ctx.fillText(text, x-1, y-1);
-          ctx.fillStyle = 'black';
-          ctx.fillText(text, x+1, y+1);
-          ctx.fillText(text, x+3, y+3);
-          ctx.fillText(text, x+5, y+5);
-          ctx.fillText(text, x+7, y+7);
+          tempCtx.fillStyle = 'white';
+          tempCtx.fillText(text, x-3, y-3);
+          tempCtx.fillText(text, x-1, y-1);
+          tempCtx.fillStyle = 'black';
+          tempCtx.fillText(text, x+1, y+1);
+          tempCtx.fillText(text, x+3, y+3);
+          tempCtx.fillText(text, x+5, y+5);
+          tempCtx.fillText(text, x+7, y+7);
 
-          ctx.fillStyle = '#781EF0';
-          ctx.fillText(text, x, y);
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.fillText(text, x, y);
         }
 
         if (mapInfo.extra2 !== -1 && mapData.names && mapData.names[mapInfo.extra2.toString()]) {
           const extraText = mapData.names[mapInfo.extra2.toString()];
-          ctx.fillStyle = '#781EF0';
-          ctx.font = '95px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.font = '95px Arial';
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
 
-          ctx.fillStyle = 'white';
-          ctx.fillText(extraText, x-3, y+100);
-          ctx.fillText(extraText, x-1, y+100);
-          ctx.fillStyle = 'black';
-          ctx.fillText(extraText, x+1, y+100);
-          ctx.fillText(extraText, x+3, y+100);
-          ctx.fillText(extraText, x+5, y+100);
-          ctx.fillText(extraText, x+7, y+100);
+          tempCtx.fillStyle = 'white';
+          tempCtx.fillText(extraText, x-3, y+100);
+          tempCtx.fillText(extraText, x-1, y+100);
+          tempCtx.fillStyle = 'black';
+          tempCtx.fillText(extraText, x+1, y+100);
+          tempCtx.fillText(extraText, x+3, y+100);
+          tempCtx.fillText(extraText, x+5, y+100);
+          tempCtx.fillText(extraText, x+7, y+100);
 
-          ctx.fillStyle = '#781EF0';
-          ctx.fillText(extraText, x, y+100);
+          tempCtx.fillStyle = '#781EF0';
+          tempCtx.fillText(extraText, x, y+100);
         }
       }
 
@@ -638,17 +645,17 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
             const [x, y] = mapData.coordinates[construct.coord_index.toString()];
             const text = mapData.names[construct.type.toString()];
 
-            ctx.fillStyle = '#FFFF00';
-            ctx.font = '65px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            tempCtx.fillStyle = '#FFFF00';
+            tempCtx.font = '65px Arial';
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'middle';
 
-            ctx.fillStyle = 'black';
-            ctx.fillText(text, x+4, y+4);
-            ctx.fillText(text, x-4, y-4);
+            tempCtx.fillStyle = 'black';
+            tempCtx.fillText(text, x+4, y+4);
+            tempCtx.fillText(text, x-4, y-4);
 
-            ctx.fillStyle = '#FFFF00';
-            ctx.fillText(text, x, y);
+            tempCtx.fillStyle = '#FFFF00';
+            tempCtx.fillText(text, x, y);
           }
         }
       }
@@ -668,17 +675,34 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         const eventX = 1200;
         const eventY = 4300;
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '160px Arial';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
+        tempCtx.fillStyle = '#FFFFFF';
+        tempCtx.font = '160px Arial';
+        tempCtx.textAlign = 'left';
+        tempCtx.textBaseline = 'top';
 
-        ctx.fillStyle = '#730FE6';
-        ctx.fillText(eventText, eventX+15, eventY+15);
+        tempCtx.fillStyle = '#730FE6';
+        tempCtx.fillText(eventText, eventX+15, eventY+15);
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(eventText, eventX, eventY);
+        tempCtx.fillStyle = '#FFFFFF';
+        tempCtx.fillText(eventText, eventX, eventY);
       }
+
+      // After all drawing is complete, transfer to the main canvas
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        setIsGeneratingMap(false);
+        return;
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        setIsGeneratingMap(false);
+        return;
+      }
+
+      // Set main canvas size and copy the complete map
+      canvas.width = tempCanvas.width;
+      canvas.height = tempCanvas.height;
+      ctx.drawImage(tempCanvas, 0, 0);
 
       // Scale canvas to 1/5 size for display
       const scale = 0.2;
@@ -688,9 +712,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       canvas.style.height = scaledHeight + 'px';
 
       setShowCompleteMap(true);
+      setIsGeneratingMap(false);
     } catch (error) {
       console.error('生成完整地图失败:', error);
       setError('生成完整地图失败: ' + (error as Error).message);
+      setIsGeneratingMap(false);
     }
   }, [mapData, loadImage]);
 
@@ -788,18 +814,19 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     if (seedInfos.length === 1) {
       const finalSeedData = filteredSeeds[0];
       setFinalSeed(seedInfos[0]);
+      setIsGeneratingMap(true);
 
-      // Generate complete map after a short delay
-      setTimeout(() => {
-        generateCompleteMap(finalSeedData.seedNumber);
-        // Call the callback if provided
-        if (onSeedRecognized) {
-          onSeedRecognized(finalSeedData.seedNumber);
-        }
-      }, 2000); // 2 second delay to show success message
+      // Generate complete map immediately in background
+      generateCompleteMap(finalSeedData.seedNumber);
+      
+      // Call the callback if provided
+      if (onSeedRecognized) {
+        onSeedRecognized(finalSeedData.seedNumber);
+      }
     } else {
       setFinalSeed(null);
       setShowCompleteMap(false);
+      setIsGeneratingMap(false);
     }
   }, [selectedNightlord, selectedMap, currentPois, cvClassificationData, generateCompleteMap, onSeedRecognized]);
 
@@ -976,9 +1003,9 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                     可能的种子数量: {possibleSeeds.length} - 继续标记POI以缩小范围
                   </p>
                 ) : possibleSeeds.length === 1 ? (
-                  <div className="space-y-4 p-6 bg-green-50 border-2 border-green-200 rounded-lg animate-pulse">
+                  <div className="space-y-4 p-6 bg-green-50 border-2 border-green-200 rounded-lg">
                     <div className="text-center space-y-3">
-                      <div className="text-6xl animate-bounce">🎉</div>
+                      <div className="text-6xl">🎉</div>
                       <p className="text-green-700 font-bold text-xl">
                         识别成功！
                       </p>
@@ -991,10 +1018,12 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                           地图: <span className="font-semibold">{possibleSeeds[0].map}</span>
                         </p>
                       </div>
-                      <div className="flex items-center justify-center space-x-2 text-green-600">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                        <p>正在生成完整地图...</p>
-                      </div>
+                      {isGeneratingMap && (
+                        <div className="flex items-center justify-center space-x-2 text-green-600">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                          <p>正在生成完整地图...</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
