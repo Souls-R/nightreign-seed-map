@@ -909,11 +909,36 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       <Card className="max-w-6xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            地图种子识别器
+            艾尔登法环：黑夜君临地图种子识别
           </CardTitle>
           <p className="text-center text-muted-foreground">
             通过在地图上点击POI来识别Nightreign地图种子
           </p>
+          <div className="text-center text-sm text-muted-foreground mt-4 space-y-2">
+            <p>
+              艾尔登法环：黑夜君临实际上只有预制的320张地图，8个夜王每个夜王40张，按地形分配普通20+雪山5+火山5+腐败5+隐城5。
+            </p>
+            <p>
+              所以你可以在游戏一开始即可通过特定位置的教堂等地标识别种子，并获得地图的以下信息：
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>缩圈位置</li>
+              <li>每晚boss的信息</li>
+              <li>野外boss的信息</li>
+              <li>封印监牢的信息</li>
+              <li>主城类型（失乡，熔炉，山妖）</li>
+            </ul>
+            <p className="mt-4">
+              <a 
+                href="https://github.com/Souls-R/nightreign-seed-map" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                查看GitHub仓库
+              </a>
+            </p>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Selection Section */}
