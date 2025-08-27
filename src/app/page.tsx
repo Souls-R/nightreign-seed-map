@@ -1,40 +1,40 @@
 'use client';
 
 import { useState } from 'react';
-import { MapGenerator } from "@/components/MapGenerator";
 import { SeedRecognizer } from "@/components/SeedRecognizer";
-import { Button } from "@/components/ui/button";
+import { MapGenerator } from "@/components/MapGenerator";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'generator' | 'recognizer'>('generator');
+  const [recognizedSeedId, setRecognizedSeedId] = useState<number | null>(null);
+  const [showMapGenerator, setShowMapGenerator] = useState(false);
+
+  const handleSeedRecognized = (seedId: number) => {
+    setRecognizedSeedId(seedId);
+    setShowMapGenerator(true);
+  };
+
+  const handleBackToRecognizer = () => {
+    setShowMapGenerator(false);
+    setRecognizedSeedId(null);
+  };
 
   return (
     <main className="min-h-screen bg-background">
-      {/* 标签页切换 */}
-      <div className="container mx-auto py-4 px-4">
-        <div className="flex justify-center mb-8">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <Button
-              onClick={() => setActiveTab('generator')}
-              variant={activeTab === 'generator' ? 'default' : 'ghost'}
-              className="px-6"
+      {!showMapGenerator ? (
+        <SeedRecognizer onSeedRecognized={handleSeedRecognized} />
+      ) : (
+        <div>
+          <div className="container mx-auto py-4">
+            <button
+              onClick={handleBackToRecognizer}
+              className="mb-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              地图生成器
-            </Button>
-            <Button
-              onClick={() => setActiveTab('recognizer')}
-              variant={activeTab === 'recognizer' ? 'default' : 'ghost'}
-              className="px-6"
-            >
-              种子识别器
-            </Button>
+              ← 返回种子识别器
+            </button>
           </div>
+          <MapGenerator initialSeedId={recognizedSeedId?.toString()} />
         </div>
-      </div>
-
-      {/* 内容区域 */}
-      {activeTab === 'generator' && <MapGenerator />}
-      {activeTab === 'recognizer' && <SeedRecognizer />}
+      )}
     </main>
   );
 }

@@ -4,30 +4,32 @@ import { Label } from "@/components/ui/label";
 
 interface MapInputProps {
   mapId: string;
-  onMapIdChange: (value: string) => void;
+  onMapIdChange?: (value: string) => void;
   onGenerate: () => void;
   loading: boolean;
+  disabled?: boolean;
 }
 
-export function MapInput({ mapId, onMapIdChange, onGenerate, loading }: MapInputProps) {
+export function MapInput({ mapId, onMapIdChange, onGenerate, loading, disabled }: MapInputProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="mapId" className="text-sm font-medium">
-          地图ID
+          地图ID {disabled && <span className="text-green-600">(自动识别)</span>}
         </Label>
         <div className="flex gap-2">
           <Input
             id="mapId"
             type="text"
-            placeholder="输入地图ID"
+            placeholder={disabled ? "已自动设置" : "输入地图ID"}
             value={mapId}
-            onChange={(e) => onMapIdChange(e.target.value)}
+            onChange={onMapIdChange ? (e) => onMapIdChange(e.target.value) : undefined}
+            disabled={disabled || !onMapIdChange}
             className="w-48"
           />
           <Button
             onClick={onGenerate}
-            disabled={loading}
+            disabled={loading || disabled}
             className="min-w-24"
           >
             {loading ? "生成中..." : "生成地图"}

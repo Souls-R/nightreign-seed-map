@@ -13,14 +13,18 @@ interface MapData {
   names: Record<string, string>;
 }
 
-export function MapGenerator() {
-  const [mapId, setMapId] = useState('');
+interface MapGeneratorProps {
+  initialSeedId?: string;
+}
+
+export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
+  const [mapId, setMapId] = useState(initialSeedId || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mapData, setMapData] = useState<MapData | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 加载数据
+  // Load data
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -36,7 +40,16 @@ export function MapGenerator() {
     loadData();
   }, []);
 
-  // 加载图片
+  // Auto-generate map when initialSeedId is provided
+  useEffect(() => {
+    if (initialSeedId && mapData && !loading) {
+      setMapId(initialSeedId);
+      // Auto-generate the map
+      setTimeout(() => generateMap(), 100);
+    }
+  }, [initialSeedId, mapData, loading]);
+
+  // Load image
   const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -46,7 +59,7 @@ export function MapGenerator() {
     });
   };
 
-  // 生成地图
+  // Generate map
   const generateMap = async () => {
     if (!mapId.trim()) {
       setError('请输入地图ID');
@@ -70,80 +83,80 @@ export function MapGenerator() {
       const mapInfo = mapData.maps[mapId];
       const backgroundName = `background_${mapInfo.Special}.png`;
 
-      // 加载背景图片
+      // Load background image
       const backgroundImg = await loadImage(`/static/${backgroundName}`);
 
-      // 设置canvas大小
+      // Set canvas size
       canvas.width = backgroundImg.width;
       canvas.height = backgroundImg.height;
 
-      // 绘制背景
+      // Draw background
       ctx.drawImage(backgroundImg, 0, 0);
 
-      // 绘制NightLord
+      // Draw NightLord
       if (mapInfo.NightLord !== undefined && mapInfo.NightLord !== null) {
         try {
           const nightlordImg = await loadImage(`/static/nightlord_${mapInfo.NightLord}.png`);
 
-          // 保存当前合成模式
+          // Save current composite operation
           const previousCompositeOperation = ctx.globalCompositeOperation;
-          // 使用lighter模式以实现夜光效果
+          // Use lighter mode for night light effect
           ctx.globalCompositeOperation = 'lighter';
           ctx.drawImage(nightlordImg, 0, 0);
-          // 恢复之前的合成模式
+          // Restore previous composite operation
           ctx.globalCompositeOperation = previousCompositeOperation;
         } catch (error) {
           console.warn(`无法加载NightLord图片`);
         }
       }
 
-      // 绘制Treasure
+      // Draw Treasure
       const treasureValue = mapInfo.Treasure_800;
       const combinedValue = treasureValue * 10 + mapInfo.Special;
       try {
         const treasureImg = await loadImage(`/static/treasure_${combinedValue}.png`);
-        // 保存当前合成模式
+        // Save current composite operation
         const previousCompositeOperation = ctx.globalCompositeOperation;
-        // 设置为source-over以正确处理透明度
+        // Set to source-over for correct transparency handling
         ctx.globalCompositeOperation = 'source-over';
         ctx.drawImage(treasureImg, 0, 0);
-        // 恢复之前的合成模式
+        // Restore previous composite operation
         ctx.globalCompositeOperation = previousCompositeOperation;
       } catch (error) {
         console.warn(`无法加载Treasure图片`);
       }
 
-      // 绘制RotRew
+      // Draw RotRew
       if (mapInfo.RotRew_500 !== 0) {
         try {
           const rotrewImg = await loadImage(`/static/RotRew_${mapInfo.RotRew_500}.png`);
-          // 保存当前合成模式
+          // Save current composite operation
           const previousCompositeOperation = ctx.globalCompositeOperation;
-          // 设置为source-over以正确处理透明度
+          // Set to source-over for correct transparency handling
           ctx.globalCompositeOperation = 'source-over';
           ctx.drawImage(rotrewImg, 0, 0);
-          // 恢复之前的合成模式
+          // Restore previous composite operation
           ctx.globalCompositeOperation = previousCompositeOperation;
         } catch (error) {
           console.warn(`无法加载RotRew图片`);
         }
       }
 
-      // 绘制Start
+      // Draw Start
       try {
         const startImg = await loadImage(`/static/Start_${mapInfo.Start_190}.png`);
-        // 保存当前合成模式
+        // Save current composite operation
         const previousCompositeOperation = ctx.globalCompositeOperation;
-        // 设置为source-over以正确处理透明度
+        // Set to source-over for correct transparency handling
         ctx.globalCompositeOperation = 'source-over';
         ctx.drawImage(startImg, 0, 0);
-        // 恢复之前的合成模式
+        // Restore previous composite operation
         ctx.globalCompositeOperation = previousCompositeOperation;
       } catch (error) {
         console.warn(`无法加载Start图片`);
       }
 
-      // 绘制建筑
+      // Draw constructs
       if (mapData.constructs && mapData.constructs[mapId]) {
         for (const construct of mapData.constructs[mapId]) {
           try {
@@ -161,7 +174,7 @@ export function MapGenerator() {
         }
       }
 
-      // 绘制Night Circle图片和文字标注
+      // Draw Night Circle images and text labels
       const day1Loc = mapInfo.Day1Loc.toString();
       const day2Loc = mapInfo.Day2Loc.toString();
 
@@ -189,18 +202,18 @@ export function MapGenerator() {
         }
       }
 
-      // 绘制Night Circle文字标注
+      // Draw Night Circle text labels
       if (mapData.coordinates && mapData.coordinates[day1Loc]) {
         const [x, y] = mapData.coordinates[day1Loc];
-        // Day1 Boss文字
+        // Day1 Boss text
         if (mapData.names && mapData.names[mapInfo.Day1Boss.toString()]) {
           const text = "DAY1 " + mapData.names[mapInfo.Day1Boss.toString()];
-          ctx.fillStyle = '#781EF0'; // 紫色文字
+          ctx.fillStyle = '#781EF0'; // Purple text
           ctx.font = '95px Arial';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // 添加文字阴影
+          // Add text shadow
           ctx.fillStyle = 'white';
           ctx.fillText(text, x-3, y-3);
           ctx.fillText(text, x-1, y-1);
@@ -210,12 +223,12 @@ export function MapGenerator() {
           ctx.fillText(text, x+5, y+5);
           ctx.fillText(text, x+7, y+7);
 
-          // 主文字
+          // Main text
           ctx.fillStyle = '#781EF0';
           ctx.fillText(text, x, y);
         }
 
-        // Day1 额外文字
+        // Day1 extra text
         if (mapInfo.extra1 !== -1 && mapData.names && mapData.names[mapInfo.extra1.toString()]) {
           const extraText = mapData.names[mapInfo.extra1.toString()];
           ctx.fillStyle = '#781EF0';
@@ -223,7 +236,7 @@ export function MapGenerator() {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // 添加文字阴影
+          // Add text shadow
           ctx.fillStyle = 'white';
           ctx.fillText(extraText, x-3, y+100);
           ctx.fillText(extraText, x-1, y+100);
@@ -233,7 +246,7 @@ export function MapGenerator() {
           ctx.fillText(extraText, x+5, y+100);
           ctx.fillText(extraText, x+7, y+100);
 
-          // 主文字
+          // Main text
           ctx.fillStyle = '#781EF0';
           ctx.fillText(extraText, x, y+100);
         }
@@ -241,7 +254,7 @@ export function MapGenerator() {
 
       if (mapData.coordinates && mapData.coordinates[day2Loc]) {
         const [x, y] = mapData.coordinates[day2Loc];
-        // Day2 Boss文字
+        // Day2 Boss text
         if (mapData.names && mapData.names[mapInfo.Day2Boss.toString()]) {
           const text = "DAY2 " + mapData.names[mapInfo.Day2Boss.toString()];
           ctx.fillStyle = '#781EF0';
@@ -249,7 +262,7 @@ export function MapGenerator() {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // 添加文字阴影
+          // Add text shadow
           ctx.fillStyle = 'white';
           ctx.fillText(text, x-3, y-3);
           ctx.fillText(text, x-1, y-1);
@@ -259,12 +272,12 @@ export function MapGenerator() {
           ctx.fillText(text, x+5, y+5);
           ctx.fillText(text, x+7, y+7);
 
-          // 主文字
+          // Main text
           ctx.fillStyle = '#781EF0';
           ctx.fillText(text, x, y);
         }
 
-        // Day2 额外文字
+        // Day2 extra text
         if (mapInfo.extra2 !== -1 && mapData.names && mapData.names[mapInfo.extra2.toString()]) {
           const extraText = mapData.names[mapInfo.extra2.toString()];
           ctx.fillStyle = '#781EF0';
@@ -272,7 +285,7 @@ export function MapGenerator() {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // 添加文字阴影
+          // Add text shadow
           ctx.fillStyle = 'white';
           ctx.fillText(extraText, x-3, y+100);
           ctx.fillText(extraText, x-1, y+100);
@@ -282,37 +295,37 @@ export function MapGenerator() {
           ctx.fillText(extraText, x+5, y+100);
           ctx.fillText(extraText, x+7, y+100);
 
-          // 主文字
+          // Main text
           ctx.fillStyle = '#781EF0';
           ctx.fillText(extraText, x, y+100);
         }
       }
 
-      // 绘制建筑文字标注
+      // Draw construct text labels
       if (mapData.constructs && mapData.constructs[mapId]) {
         for (const construct of mapData.constructs[mapId]) {
           if (mapData.coordinates && mapData.coordinates[construct.coord_index.toString()] && mapData.names && mapData.names[construct.type.toString()]) {
             const [x, y] = mapData.coordinates[construct.coord_index.toString()];
             const text = mapData.names[construct.type.toString()];
 
-            ctx.fillStyle = '#FFFF00'; // 黄色文字
+            ctx.fillStyle = '#FFFF00'; // Yellow text
             ctx.font = '65px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // 添加文字阴影
+            // Add text shadow
             ctx.fillStyle = 'black';
             ctx.fillText(text, x+4, y+4);
             ctx.fillText(text, x-4, y-4);
 
-            // 主文字
+            // Main text
             ctx.fillStyle = '#FFFF00';
             ctx.fillText(text, x, y);
           }
         }
       }
 
-      // 绘制事件描述文字
+      // Draw event description text
       let eventText = '';
       if (mapInfo.EventFlag === 7705 || mapInfo.EventFlag === 7725) {
         const eventFlagName = (mapData.names && mapData.names[mapInfo.EventFlag.toString()]) || mapInfo.EventFlag.toString();
@@ -327,21 +340,21 @@ export function MapGenerator() {
         const eventX = 1200;
         const eventY = 4300;
 
-        ctx.fillStyle = '#FFFFFF'; // 白色文字
+        ctx.fillStyle = '#FFFFFF'; // White text
         ctx.font = '160px Arial';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
 
-        // 添加文字阴影
-        ctx.fillStyle = '#730FE6'; // 紫色阴影
+        // Add text shadow
+        ctx.fillStyle = '#730FE6'; // Purple shadow
         ctx.fillText(eventText, eventX+15, eventY+15);
 
-        // 主文字
+        // Main text
         ctx.fillStyle = '#FFFFFF';
         ctx.fillText(eventText, eventX, eventY);
       }
 
-      // 缩放canvas到1/5大小显示
+      // Scale canvas to 1/5 size for display
       const scale = 0.2;
       const scaledWidth = canvas.width * scale;
       const scaledHeight = canvas.height * scale;
@@ -361,15 +374,21 @@ export function MapGenerator() {
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            地图生成器
+            {initialSeedId ? `识别结果 - 种子 ${initialSeedId}` : '地图生成器'}
           </CardTitle>
+          {initialSeedId && (
+            <p className="text-center text-green-600 font-medium">
+              🎯 根据POI识别自动生成的地图
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           <MapInput
             mapId={mapId}
-            onMapIdChange={setMapId}
+            onMapIdChange={initialSeedId ? undefined : setMapId}
             onGenerate={generateMap}
             loading={loading}
+            disabled={!!initialSeedId}
           />
 
           <MapStatus loading={loading} error={error} />
