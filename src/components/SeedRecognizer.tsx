@@ -63,6 +63,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [cvClassificationData, setCvClassificationData] = useState<CVClassificationData | null>(null);
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [showCompleteMap, setShowCompleteMap] = useState(false);
+  const [poiImages, setPoiImages] = useState<Record<string, HTMLImageElement>>({});
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -119,7 +120,30 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   useEffect(() => {
     loadClassificationData();
     loadMapData();
+    loadPoiImages();
   }, [loadClassificationData, loadMapData]);
+
+  // Load POI images
+  const loadPoiImages = useCallback(() => {
+    const images: Record<string, HTMLImageElement> = {};
+    const imageUrls = {
+      church: '/poi-assets/church.png',
+      mage: '/poi-assets/mage-tower.png',
+      village: '/poi-assets/village.png'
+    };
+
+    Object.entries(imageUrls).forEach(([key, url]) => {
+      const img = new Image();
+      img.onload = () => {
+        images[key] = img;
+        setPoiImages(prev => ({ ...prev, [key]: img }));
+      };
+      img.onerror = () => {
+        console.warn(`Failed to load POI image: ${key}`);
+      };
+      img.src = url;
+    });
+  }, []);
 
   // Initialize POI states
   const initializePoiStates = useCallback((pois: POI[]) => {
@@ -130,7 +154,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     return states;
   }, []);
 
-  // Draw POI on canvas
+  // Draw POI on canvas with proper icons
   const drawPoi = useCallback((ctx: CanvasRenderingContext2D, poi: POI, state: POIState) => {
     const { x, y } = poi;
 
@@ -147,35 +171,51 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         break;
 
       case 'church':
-        // Draw church icon (simple cross for now)
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(x - 8, y - 15, 16, 25);
-        ctx.fillStyle = '#FFD700';
-        ctx.fillRect(x - 2, y - 10, 4, 15);
-        ctx.fillRect(x - 8, y - 5, 16, 4);
+        // Draw church icon if loaded
+        if (poiImages.church && poiImages.church.complete) {
+          ctx.drawImage(poiImages.church, x - ICON_SIZE / 2, y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE);
+        } else {
+          // Fallback to orange dot if image not loaded
+          ctx.beginPath();
+          ctx.arc(x, y, ICON_SIZE / 2, 0, 2 * Math.PI);
+          ctx.fillStyle = '#8B4513';
+          ctx.fill();
+          ctx.strokeStyle = '#FFD700';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
         break;
 
       case 'mage':
-        // Draw mage tower icon (simple tower)
-        ctx.fillStyle = '#4B0082';
-        ctx.fillRect(x - 6, y - 15, 12, 20);
-        ctx.fillStyle = '#9370DB';
-        ctx.fillRect(x - 4, y - 12, 8, 2);
-        ctx.fillRect(x - 4, y - 8, 8, 2);
-        ctx.fillRect(x - 4, y - 4, 8, 2);
+        // Draw mage tower icon if loaded
+        if (poiImages.mage && poiImages.mage.complete) {
+          ctx.drawImage(poiImages.mage, x - ICON_SIZE / 2, y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE);
+        } else {
+          // Fallback to purple dot if image not loaded
+          ctx.beginPath();
+          ctx.arc(x, y, ICON_SIZE / 2, 0, 2 * Math.PI);
+          ctx.fillStyle = '#4B0082';
+          ctx.fill();
+          ctx.strokeStyle = '#9370DB';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
         break;
 
       case 'village':
-        // Draw village icon (simple house)
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(x - 8, y - 8, 16, 12);
-        ctx.fillStyle = '#DC143C';
-        ctx.beginPath();
-        ctx.moveTo(x - 8, y - 8);
-        ctx.lineTo(x, y - 15);
-        ctx.lineTo(x + 8, y - 8);
-        ctx.closePath();
-        ctx.fill();
+        // Draw village icon if loaded
+        if (poiImages.village && poiImages.village.complete) {
+          ctx.drawImage(poiImages.village, x - ICON_SIZE / 2, y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE);
+        } else {
+          // Fallback to brown dot if image not loaded
+          ctx.beginPath();
+          ctx.arc(x, y, ICON_SIZE / 2, 0, 2 * Math.PI);
+          ctx.fillStyle = '#8B4513';
+          ctx.fill();
+          ctx.strokeStyle = '#DC143C';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
         break;
 
       case 'other':
@@ -206,7 +246,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         ctx.fillText('?', x, y);
         break;
     }
-  }, [ICON_SIZE]);
+  }, [ICON_SIZE, poiImages]);
 
   // Handle map selection
   const handleMapSelect = (map: string) => {
@@ -263,22 +303,23 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     if (poi) {
       const currentState = poiStates[poi.id];
       
-      // If POI is already marked as church, reset it to dot
+      // Left click toggles church state
       if (currentState === 'church') {
-        setPoiStates(prev => ({
-          ...prev,
-          [poi.id]: 'dot'
-        }));
+        // If already church, reset to dot
+        setPoiStates(prev => {
+          const newStates = { ...prev, [poi.id]: 'dot' as POIState };
+          return newStates;
+        });
       } else {
         // Mark as church
-        setPoiStates(prev => ({
-          ...prev,
-          [poi.id]: 'church'
-        }));
+        setPoiStates(prev => {
+          const newStates = { ...prev, [poi.id]: 'church' as POIState };
+          return newStates;
+        });
       }
       
       // Auto filter after each POI marking/unmarking
-      updateSeedFiltering();
+      setTimeout(() => updateSeedFiltering(), 10);
     }
   };
 
@@ -299,7 +340,12 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
     if (poi) {
       setRightClickedPoi(poi);
-      setContextMenuPos({ x: event.clientX, y: event.clientY });
+      // Get the canvas position relative to the viewport
+      const canvasRect = canvas.getBoundingClientRect();
+      setContextMenuPos({ 
+        x: event.clientX, 
+        y: event.clientY 
+      });
       setShowContextMenu(true);
     }
   };
@@ -312,7 +358,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         [rightClickedPoi.id]: type
       }));
       // Auto filter after each POI type selection
-      updateSeedFiltering();
+      setTimeout(() => updateSeedFiltering(), 10);
     }
     setShowContextMenu(false);
     setRightClickedPoi(null);
@@ -731,21 +777,23 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         loadImage(MAP_IMAGES[selectedMap as keyof typeof MAP_IMAGES])
           .then(backgroundImg => {
             ctx.drawImage(backgroundImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            // Draw dots for all POIs initially
+            // Draw POIs on top
             currentPois.forEach(poi => {
-              drawPoi(ctx, poi, 'dot');
+              const state = poiStates[poi.id] || 'dot';
+              drawPoi(ctx, poi, state);
             });
           })
           .catch(error => {
             console.warn('Background image not found, using default background');
-            // Draw dots for all POIs initially
+            // Draw POIs initially
             currentPois.forEach(poi => {
-              drawPoi(ctx, poi, 'dot');
+              const state = poiStates[poi.id] || 'dot';
+              drawPoi(ctx, poi, state);
             });
           });
       }
     }
-  }, [selectedMap, currentPois, finalSeed, showCompleteMap, loadImage, drawPoi, CANVAS_SIZE]);
+  }, [selectedMap, currentPois, finalSeed, showCompleteMap, poiStates, loadImage, drawPoi, CANVAS_SIZE]);
 
   // Hide context menu when clicking elsewhere
   useEffect(() => {
@@ -815,11 +863,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center space-x-2">
                   <span className="w-4 h-4 bg-orange-500 rounded-full"></span>
-                  <span><strong>左键点击</strong>橙色圆点标记为Church，再次点击取消</span>
+                  <span><strong>左键点击</strong>橙色圆点标记/取消Church</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="w-4 h-4 bg-purple-500 rounded-full"></span>
-                  <span><strong>右键点击</strong>选择其他POI类型</span>
+                  <span><strong>右键点击</strong>选择Mage Tower或Village</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button onClick={resetMap} variant="outline" size="sm">
@@ -860,24 +908,25 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
               {showContextMenu && !showCompleteMap && (
                 <div
                   ref={contextMenuRef}
-                  className="absolute bg-white border border-gray-300 rounded shadow-lg py-2 z-10"
+                  className="fixed bg-white border border-gray-300 rounded shadow-lg py-2 z-50"
                   style={{
-                    left: contextMenuPos.x,
-                    top: contextMenuPos.y,
-                    transform: 'translate(-50%, -100%)'
+                    left: `${contextMenuPos.x}px`,
+                    top: `${contextMenuPos.y}px`,
                   }}
                 >
                   <button
                     onClick={() => handlePoiTypeSelect('mage')}
-                    className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    className="flex w-full px-4 py-2 text-left hover:bg-gray-100 items-center space-x-2"
                   >
-                    🧙 Sorcerer's Rise
+                    <img src="/poi-assets/mage-tower.png" alt="Mage" className="w-4 h-4" />
+                    <span>🧙 Sorcerer's Rise</span>
                   </button>
                   <button
                     onClick={() => handlePoiTypeSelect('village')}
-                    className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    className="flex w-full px-4 py-2 text-left hover:bg-gray-100 items-center space-x-2"
                   >
-                    🏘️ Village
+                    <img src="/poi-assets/village.png" alt="Village" className="w-4 h-4" />
+                    <span>🏘️ Village</span>
                   </button>
                   <button
                     onClick={() => handlePoiTypeSelect('other')}
@@ -885,6 +934,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                   >
                     ❓ Other POI
                   </button>
+                  <hr className="my-1" />
                   <button
                     onClick={() => handlePoiTypeSelect('dot')}
                     className="block w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-600"
