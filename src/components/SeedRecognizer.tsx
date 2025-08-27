@@ -478,7 +478,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         try {
           const nightlordImg = await loadImage(`/static/nightlord_${mapInfo.NightLord}.png`);
           const previousCompositeOperation = tempCtx.globalCompositeOperation;
-          tempCtx.globalCompositeOperation = 'lighter';
+          tempCtx.globalCompositeOperation = 'source-over';
           tempCtx.drawImage(nightlordImg, 0, 0);
           tempCtx.globalCompositeOperation = previousCompositeOperation;
         } catch (error) {
