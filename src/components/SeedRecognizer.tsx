@@ -308,18 +308,23 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         // If already church, reset to dot
         setPoiStates(prev => {
           const newStates = { ...prev, [poi.id]: 'dot' as POIState };
+          // Use callback to ensure we have the latest state when filtering
+          setTimeout(() => {
+            updateSeedFilteringWithStates(newStates);
+          }, 0);
           return newStates;
         });
       } else {
         // Mark as church
         setPoiStates(prev => {
           const newStates = { ...prev, [poi.id]: 'church' as POIState };
+          // Use callback to ensure we have the latest state when filtering
+          setTimeout(() => {
+            updateSeedFilteringWithStates(newStates);
+          }, 0);
           return newStates;
         });
       }
-      
-      // Auto filter after each POI marking/unmarking
-      setTimeout(() => updateSeedFiltering(), 10);
     }
   };
 
@@ -353,12 +358,14 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   // Handle POI type selection from context menu - auto filter after each selection
   const handlePoiTypeSelect = (type: POIState) => {
     if (rightClickedPoi) {
-      setPoiStates(prev => ({
-        ...prev,
-        [rightClickedPoi.id]: type
-      }));
-      // Auto filter after each POI type selection
-      setTimeout(() => updateSeedFiltering(), 10);
+      setPoiStates(prev => {
+        const newStates = { ...prev, [rightClickedPoi.id]: type };
+        // Use callback to ensure we have the latest state when filtering
+        setTimeout(() => {
+          updateSeedFilteringWithStates(newStates);
+        }, 0);
+        return newStates;
+      });
     }
     setShowContextMenu(false);
     setRightClickedPoi(null);
@@ -646,8 +653,8 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   }, [mapData, loadImage]);
 
-  // Update seed filtering
-  const updateSeedFiltering = useCallback(() => {
+  // Update seed filtering with specific states (used for immediate filtering after state changes)
+  const updateSeedFilteringWithStates = useCallback((states: Record<number, POIState>) => {
     if (!selectedNightlord || !selectedMap || !cvClassificationData) {
       setPossibleSeeds([]);
       return;
@@ -667,7 +674,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       console.log(`\n🔍 Checking Seed ${seed.seedNumber}:`);
 
       for (const poi of currentPois) {
-        const userState = poiStates[poi.id];
+        const userState = states[poi.id];
 
         // If user hasn't marked this POI yet, skip it
         if (userState === 'dot') {
@@ -753,7 +760,12 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       setFinalSeed(null);
       setShowCompleteMap(false);
     }
-  }, [selectedNightlord, selectedMap, currentPois, poiStates, cvClassificationData, generateCompleteMap]);
+  }, [selectedNightlord, selectedMap, currentPois, cvClassificationData, generateCompleteMap, onSeedRecognized]);
+
+  // Update seed filtering
+  const updateSeedFiltering = useCallback(() => {
+    updateSeedFilteringWithStates(poiStates);
+  }, [updateSeedFilteringWithStates, poiStates]);
 
   // Draw map when dependencies change - draw dots initially, final drawing handled by drawMapWithSeedData
   useEffect(() => {
