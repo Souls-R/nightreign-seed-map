@@ -66,6 +66,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const loadedImages = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const CANVAS_SIZE = 768;
   const ICON_SIZE = 38;
@@ -76,11 +77,20 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     'Libra', 'Fulghor', 'Caligo', 'Heolstor'
   ];
 
-  // Load background image
+  // Load background image、
   const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
+    // Check if image is already loaded
+    if (loadedImages.current.has(src)) {
+      return Promise.resolve(loadedImages.current.get(src)!);
+    }
+
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload = () => {
+        // Cache the loaded image
+        loadedImages.current.set(src, img);
+        resolve(img);
+      };
       img.onerror = reject;
       img.src = src;
     });
@@ -139,7 +149,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
   // Load POI images
   const loadPoiImages = useCallback(() => {
-    const images: Record<string, HTMLImageElement> = {};
     const imageUrls = {
       church: '/poi-assets/church.png',
       mage: '/poi-assets/mage-tower.png',
@@ -147,17 +156,13 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     };
 
     Object.entries(imageUrls).forEach(([key, url]) => {
-      const img = new Image();
-      img.onload = () => {
-        images[key] = img;
+      loadImage(url).then(img => {
         setPoiImages(prev => ({ ...prev, [key]: img }));
-      };
-      img.onerror = () => {
+      }).catch(() => {
         console.warn(`Failed to load POI image: ${key}`);
-      };
-      img.src = url;
+      });
     });
-  }, []);
+  }, [loadImage]);
 
   // Initialize POI states
   const initializePoiStates = useCallback((pois: POI[]) => {
