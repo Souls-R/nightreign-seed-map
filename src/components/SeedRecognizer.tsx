@@ -185,10 +185,10 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       case 'dot':
         // Draw orange dot
         ctx.beginPath();
-        ctx.arc(x, y, ICON_SIZE / 2, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ff8c00';
+        ctx.arc(x, y, ICON_SIZE / 2.1, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ecef41';
         ctx.fill();
-        ctx.strokeStyle = '#000000';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.stroke();
         break;
@@ -583,11 +583,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           tempCtx.fillStyle = 'white';
           tempCtx.fillText(text, x-3, y-3);
           tempCtx.fillText(text, x-1, y-1);
-          tempCtx.fillStyle = 'black';
-          tempCtx.fillText(text, x+1, y+1);
-          tempCtx.fillText(text, x+3, y+3);
-          tempCtx.fillText(text, x+5, y+5);
-          tempCtx.fillText(text, x+7, y+7);
+          // tempCtx.fillStyle = 'black';
+          // tempCtx.fillText(text, x+1, y+1);
+          // tempCtx.fillText(text, x+3, y+3);
+          // tempCtx.fillText(text, x+5, y+5);
+          // tempCtx.fillText(text, x+7, y+7);
 
           tempCtx.fillStyle = '#781EF0';
           tempCtx.fillText(text, x, y);
@@ -603,11 +603,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           tempCtx.fillStyle = 'white';
           tempCtx.fillText(extraText, x-3, y+100);
           tempCtx.fillText(extraText, x-1, y+100);
-          tempCtx.fillStyle = 'black';
-          tempCtx.fillText(extraText, x+1, y+100);
-          tempCtx.fillText(extraText, x+3, y+100);
-          tempCtx.fillText(extraText, x+5, y+100);
-          tempCtx.fillText(extraText, x+7, y+100);
+          // tempCtx.fillStyle = 'black';
+          // tempCtx.fillText(extraText, x+1, y+100);
+          // tempCtx.fillText(extraText, x+3, y+100);
+          // tempCtx.fillText(extraText, x+5, y+100);
+          // tempCtx.fillText(extraText, x+7, y+100);
 
           tempCtx.fillStyle = '#781EF0';
           tempCtx.fillText(extraText, x, y+100);
@@ -626,11 +626,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           tempCtx.fillStyle = 'white';
           tempCtx.fillText(text, x-3, y-3);
           tempCtx.fillText(text, x-1, y-1);
-          tempCtx.fillStyle = 'black';
-          tempCtx.fillText(text, x+1, y+1);
-          tempCtx.fillText(text, x+3, y+3);
-          tempCtx.fillText(text, x+5, y+5);
-          tempCtx.fillText(text, x+7, y+7);
+          // tempCtx.fillStyle = 'black';
+          // tempCtx.fillText(text, x+1, y+1);
+          // tempCtx.fillText(text, x+3, y+3);
+          // tempCtx.fillText(text, x+5, y+5);
+          // tempCtx.fillText(text, x+7, y+7);
 
           tempCtx.fillStyle = '#781EF0';
           tempCtx.fillText(text, x, y);
@@ -646,11 +646,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           tempCtx.fillStyle = 'white';
           tempCtx.fillText(extraText, x-3, y+100);
           tempCtx.fillText(extraText, x-1, y+100);
-          tempCtx.fillStyle = 'black';
-          tempCtx.fillText(extraText, x+1, y+100);
-          tempCtx.fillText(extraText, x+3, y+100);
-          tempCtx.fillText(extraText, x+5, y+100);
-          tempCtx.fillText(extraText, x+7, y+100);
+          // tempCtx.fillStyle = 'black';
+          // tempCtx.fillText(extraText, x+1, y+100);
+          // tempCtx.fillText(extraText, x+3, y+100);
+          // tempCtx.fillText(extraText, x+5, y+100);
+          // tempCtx.fillText(extraText, x+7, y+100);
 
           tempCtx.fillStyle = '#781EF0';
           tempCtx.fillText(extraText, x, y+100);
@@ -660,21 +660,41 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       // Draw construct text labels
       if (mapData.constructs && mapData.constructs[seedId.toString()]) {
         for (const construct of mapData.constructs[seedId.toString()]) {
-          if (mapData.coordinates && mapData.coordinates[construct.coord_index.toString()] && mapData.names && mapData.names[construct.type.toString()]) {
-            const [x, y] = mapData.coordinates[construct.coord_index.toString()];
-            const text = mapData.names[construct.type.toString()];
+          if (
+        mapData.coordinates &&
+        mapData.coordinates[construct.coord_index.toString()] &&
+        mapData.names &&
+        mapData.names[construct.type.toString()]
+          ) {
+        let [x, y] = mapData.coordinates[construct.coord_index.toString()];
+        const text = mapData.names[construct.type.toString()];
+        // Move label down by 60px to avoid overlapping the icon
+        const labelYOffset = 60;
 
-            tempCtx.fillStyle = '#FFFF00';
-            tempCtx.font = '65px Arial';
-            tempCtx.textAlign = 'center';
-            tempCtx.textBaseline = 'middle';
+        // If label is around (2270, 2560), shift right by 100px
+        if (
+          Math.abs(x - 2270) < 30 &&
+          Math.abs(y - 2560) < 30
+        ) {
+          x += 100;
+        }
 
-            tempCtx.fillStyle = 'black';
-            tempCtx.fillText(text, x+4, y+4);
-            tempCtx.fillText(text, x-4, y-4);
+        tempCtx.fillStyle = '#f9f9f9';
+        tempCtx.font = '70px Arial';
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+        // Draw a larger, centered shadow for the construct text
+        tempCtx.save();
+        tempCtx.font = '90px Arial'; // Larger font for shadow
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+        tempCtx.fillStyle = '#4d4a2b';
+        // Draw shadow at center (no offset)
+        tempCtx.fillText(text, x, y + labelYOffset);
+        tempCtx.restore();
 
-            tempCtx.fillStyle = '#FFFF00';
-            tempCtx.fillText(text, x, y);
+        tempCtx.fillStyle = '#f9f9f9';
+        tempCtx.fillText(text, x, y + labelYOffset);
           }
         }
       }
@@ -920,7 +940,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
             </div>
           </div>
 
-          {/* Instructions */}
+          {/* Instructions and Status */}
           {selectedMap && selectedNightlord && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-800 mb-2">使用说明</h3>
@@ -933,10 +953,50 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                     <span><strong>右键</strong>：选择法师塔或村庄</span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col items-end space-y-2">
                   <Button onClick={resetMap} variant="outline" size="sm">
                     重置地图
                   </Button>
+                  
+                  {/* Status Information */}
+                  <div className="text-right space-y-1">
+                    {loading && (
+                      <div className="flex items-center space-x-2 text-blue-600">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                        <span className="text-xs">生成中...</span>
+                      </div>
+                    )}
+                    {error && <p className="text-red-600 text-xs">{error}</p>}
+                    {!loading && !error && (
+                      <>
+                        {showCompleteMap ? (
+                          <div className="text-green-600 text-xs">
+                            ✅ 种子: <span className="font-bold">{finalSeed?.seedId}</span>
+                          </div>
+                        ) : possibleSeeds.length > 1 ? (
+                          <div className="text-blue-600 text-xs">
+                            🔍 匹配种子: {possibleSeeds.length}
+                          </div>
+                        ) : possibleSeeds.length === 1 ? (
+                          <div className="space-y-1">
+                            <div className="text-green-600 text-xs">
+                              🎉 识别成功！种子: <span className="font-bold">{possibleSeeds[0].seedId}</span>
+                            </div>
+                            {isGeneratingMap && (
+                              <div className="flex items-center space-x-1 text-green-600">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600"></div>
+                                <span className="text-xs">生成地图中...</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-gray-600 text-xs">
+                            未发现任何种子，已标记: {Object.values(poiStates).filter(state => state !== 'dot').length} POI
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -954,83 +1014,36 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                 className={`border border-gray-300 ${showCompleteMap ? 'cursor-default' : 'cursor-crosshair'}`}
                 style={{ maxWidth: '100%', height: 'auto' }}
               />
-
             </div>
           </div>
 
-          {/* Status */}
-          <div className="text-center space-y-2">
-            {loading && (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <p className="text-blue-600">正在筛选种子...</p>
+          {/* Complete Map Results */}
+          {/* {showCompleteMap && (
+            <div className="space-y-4 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <div className="text-center space-y-3">
+                <div className="text-4xl">🗺️</div>
+                <p className="text-blue-700 font-bold text-xl">
+                  地图生成完成！
+                </p>
+                <div className="bg-white p-4 rounded-lg shadow-sm border">
+                  <p className="text-blue-600 text-lg">
+                    种子ID: <span className="font-bold text-2xl text-blue-800">{finalSeed?.seedId}</span>
+                  </p>
+                  <p className="text-blue-600 mt-2">
+                    Nightlord: <span className="font-semibold">{finalSeed?.nightlord}</span> |
+                    地图: <span className="font-semibold">{finalSeed?.map}</span>
+                  </p>
+                </div>
+                <Button
+                  onClick={resetMap}
+                  variant="outline"
+                  className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  🔄 重新识别种子
+                </Button>
               </div>
-            )}
-            {error && <p className="text-red-600">{error}</p>}
-            {!loading && !error && selectedMap && selectedNightlord && (
-              <>
-                {showCompleteMap ? (
-                  <div className="space-y-4 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                    <div className="text-center space-y-3">
-                      <div className="text-4xl">🗺️</div>
-                      <p className="text-blue-700 font-bold text-xl">
-                        地图生成完成！
-                      </p>
-                      <div className="bg-white p-4 rounded-lg shadow-sm border">
-                        <p className="text-blue-600 text-lg">
-                          种子ID: <span className="font-bold text-2xl text-blue-800">{finalSeed?.seedId}</span>
-                        </p>
-                        <p className="text-blue-600 mt-2">
-                          Nightlord: <span className="font-semibold">{finalSeed?.nightlord}</span> |
-                          地图: <span className="font-semibold">{finalSeed?.map}</span>
-                        </p>
-                      </div>
-                      <Button
-                        onClick={resetMap}
-                        variant="outline"
-                        className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                      >
-                        🔄 重新识别种子
-                      </Button>
-                    </div>
-                  </div>
-                ) : possibleSeeds.length > 1 ? (
-                  <p className="text-blue-600">
-                    可能的种子数量: {possibleSeeds.length} - 继续标记POI以缩小范围
-                  </p>
-                ) : possibleSeeds.length === 1 ? (
-                  <div className="space-y-4 p-6 bg-green-50 border-2 border-green-200 rounded-lg">
-                    <div className="text-center space-y-3">
-                      <div className="text-6xl">🎉</div>
-                      <p className="text-green-700 font-bold text-xl">
-                        识别成功！
-                      </p>
-                      <div className="bg-white p-4 rounded-lg shadow-sm border">
-                        <p className="text-green-600 text-lg">
-                          种子ID: <span className="font-bold text-2xl text-green-800">{possibleSeeds[0].seedId}</span>
-                        </p>
-                        <p className="text-green-600 mt-2">
-                          Nightlord: <span className="font-semibold">{possibleSeeds[0].nightlord}</span> |
-                          地图: <span className="font-semibold">{possibleSeeds[0].map}</span>
-                        </p>
-                      </div>
-                      {isGeneratingMap && (
-                        <div className="flex items-center justify-center space-x-2 text-green-600">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                          <p>正在生成完整地图...</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-600">
-                    已标记POI数量: {Object.values(poiStates).filter(state => state !== 'dot').length}
-                    {Object.values(poiStates).filter(state => state !== 'dot').length === 0 && ' - 请开始标记POI'}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+            </div>
+          )} */}
 
         </CardContent>
       </Card>

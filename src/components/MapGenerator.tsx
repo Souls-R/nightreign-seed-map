@@ -217,11 +217,7 @@ export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
           ctx.fillStyle = 'white';
           ctx.fillText(text, x-3, y-3);
           ctx.fillText(text, x-1, y-1);
-          ctx.fillStyle = 'black';
-          ctx.fillText(text, x+1, y+1);
-          ctx.fillText(text, x+3, y+3);
-          ctx.fillText(text, x+5, y+5);
-          ctx.fillText(text, x+7, y+7);
+
 
           // Main text
           ctx.fillStyle = '#781EF0';
@@ -240,11 +236,11 @@ export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
           ctx.fillStyle = 'white';
           ctx.fillText(extraText, x-3, y+100);
           ctx.fillText(extraText, x-1, y+100);
-          ctx.fillStyle = 'black';
-          ctx.fillText(extraText, x+1, y+100);
-          ctx.fillText(extraText, x+3, y+100);
-          ctx.fillText(extraText, x+5, y+100);
-          ctx.fillText(extraText, x+7, y+100);
+          // ctx.fillStyle = 'black';
+          // ctx.fillText(extraText, x+1, y+100);
+          // ctx.fillText(extraText, x+3, y+100);
+          // ctx.fillText(extraText, x+5, y+100);
+          // ctx.fillText(extraText, x+7, y+100);
 
           // Main text
           ctx.fillStyle = '#781EF0';
@@ -266,11 +262,11 @@ export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
           ctx.fillStyle = 'white';
           ctx.fillText(text, x-3, y-3);
           ctx.fillText(text, x-1, y-1);
-          ctx.fillStyle = 'black';
-          ctx.fillText(text, x+1, y+1);
-          ctx.fillText(text, x+3, y+3);
-          ctx.fillText(text, x+5, y+5);
-          ctx.fillText(text, x+7, y+7);
+          // ctx.fillStyle = 'black';
+          // ctx.fillText(text, x+1, y+1);
+          // ctx.fillText(text, x+3, y+3);
+          // ctx.fillText(text, x+5, y+5);
+          // ctx.fillText(text, x+7, y+7);
 
           // Main text
           ctx.fillStyle = '#781EF0';
@@ -289,11 +285,11 @@ export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
           ctx.fillStyle = 'white';
           ctx.fillText(extraText, x-3, y+100);
           ctx.fillText(extraText, x-1, y+100);
-          ctx.fillStyle = 'black';
-          ctx.fillText(extraText, x+1, y+100);
-          ctx.fillText(extraText, x+3, y+100);
-          ctx.fillText(extraText, x+5, y+100);
-          ctx.fillText(extraText, x+7, y+100);
+          // ctx.fillStyle = 'black';
+          // ctx.fillText(extraText, x+1, y+100);
+          // ctx.fillText(extraText, x+3, y+100);
+          // ctx.fillText(extraText, x+5, y+100);
+          // ctx.fillText(extraText, x+7, y+100);
 
           // Main text
           ctx.fillStyle = '#781EF0';
@@ -308,18 +304,18 @@ export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
             const [x, y] = mapData.coordinates[construct.coord_index.toString()];
             const text = mapData.names[construct.type.toString()];
 
-            ctx.fillStyle = '#FFFF00'; // Yellow text
+            ctx.fillStyle = '#f9f9f9';
             ctx.font = '65px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
             // Add text shadow
-            ctx.fillStyle = 'black';
+            ctx.fillStyle = '#4d4a2b';
             ctx.fillText(text, x+4, y+4);
             ctx.fillText(text, x-4, y-4);
 
             // Main text
-            ctx.fillStyle = '#FFFF00';
+            ctx.fillStyle = '#f9f9f9';
             ctx.fillText(text, x, y);
           }
         }
