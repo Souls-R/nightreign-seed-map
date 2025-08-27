@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MAPS, POIS_BY_MAP, MAP_IMAGES } from "@/lib/seedData";
+import { filehash, fileMap } from "@/lib/fileRemap";
 
 interface POI {
   id: number;
@@ -527,7 +528,14 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       if (mapData.constructs && mapData.constructs[seedId.toString()]) {
         for (const construct of mapData.constructs[seedId.toString()]) {
           try {
-            const constructImg = await loadImage(`/static/Construct_${construct.type}.png`);
+            let filename = `Construct_${construct.type}.png`;
+            // Map to representative file if it's a duplicate
+            const representativeFile = fileMap.get(filename);
+            if (representativeFile) {
+              filename = representativeFile;
+            }
+
+            const constructImg = await loadImage(`/static/${filename}`);
             const coord = mapData.coordinates[construct.coord_index.toString()];
             if (coord) {
               const [x, y] = coord;
