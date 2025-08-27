@@ -957,15 +957,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                 style={{ maxWidth: '100%', height: 'auto' }}
               />
 
-              {/* Complete Map Overlay */}
-              {showCompleteMap && (
-                <div className="absolute top-4 left-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">🎯</span>
-                    <span className="font-semibold">完整地图已生成</span>
-                  </div>
-                </div>
-              )}
 
               {/* Context Menu */}
               {showContextMenu && !showCompleteMap && (
@@ -1082,19 +1073,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
             )}
           </div>
 
-          {/* POI Reference */}
-          {selectedMap && (
-            <div className="space-y-2">
-              <Label>POI参考信息 ({selectedMap})</Label>
-              <div className="flex flex-wrap gap-2">
-                {POIS_BY_MAP[selectedMap as keyof typeof POIS_BY_MAP]?.map((poi) => (
-                  <span key={poi.id} className="inline-block px-2 py-1 bg-gray-100 border rounded text-sm">
-                    POI {poi.id} ({poi.x}, {poi.y})
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
