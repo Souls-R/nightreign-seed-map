@@ -62,6 +62,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [showCompleteMap, setShowCompleteMap] = useState(false);
   const [isGeneratingMap, setIsGeneratingMap] = useState(false);
   const [poiImages, setPoiImages] = useState<Record<string, HTMLImageElement>>({});
+  const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -112,6 +113,21 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       console.warn('⚠️ Map data not found:', error);
     }
   }, []);
+
+  // Load background image for current map
+  useEffect(() => {
+    if (selectedMap) {
+      setBackgroundImage(null); // Clear previous background
+      loadImage(MAP_IMAGES[selectedMap as keyof typeof MAP_IMAGES])
+        .then(backgroundImg => {
+          setBackgroundImage(backgroundImg);
+        })
+        .catch(error => {
+          console.warn('Background image not found, using default background');
+          setBackgroundImage(null);
+        });
+    }
+  }, [selectedMap, loadImage]);
 
   // Load classification data on mount
   useEffect(() => {
@@ -255,6 +271,33 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   }, [ICON_SIZE, poiImages]);
 
+  // Optimized canvas drawing function
+  const drawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    // Draw background
+    if (backgroundImage) {
+      ctx.drawImage(backgroundImage, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    } else {
+      // Fallback background
+      ctx.fillStyle = '#2b2b2b';
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    }
+
+    // Draw POIs
+    currentPois.forEach(poi => {
+      const state = poiStates[poi.id] || 'dot';
+      drawPoi(ctx, poi, state);
+    });
+  }, [backgroundImage, currentPois, poiStates, drawPoi, CANVAS_SIZE]);
+
   // Handle map selection
   const handleMapSelect = (map: string) => {
     setSelectedMap(map);
@@ -315,18 +358,20 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         // If already church, reset to dot (empty)
         setPoiStates(prev => {
           const newStates = { ...prev, [poi.id]: 'dot' as POIState };
-          setTimeout(() => {
+          // Use requestAnimationFrame to ensure smooth rendering
+          requestAnimationFrame(() => {
             updateSeedFilteringWithStates(newStates);
-          }, 0);
+          });
           return newStates;
         });
       } else {
         // If not church (dot, mage, village, other, unknown), set to church
         setPoiStates(prev => {
           const newStates = { ...prev, [poi.id]: 'church' as POIState };
-          setTimeout(() => {
+          // Use requestAnimationFrame to ensure smooth rendering
+          requestAnimationFrame(() => {
             updateSeedFilteringWithStates(newStates);
-          }, 0);
+          });
           return newStates;
         });
       }
@@ -364,9 +409,10 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       setPoiStates(prev => {
         const newStates = { ...prev, [poi.id]: newState };
-        setTimeout(() => {
+        // Use requestAnimationFrame to ensure smooth rendering
+        requestAnimationFrame(() => {
           updateSeedFilteringWithStates(newStates);
-        }, 0);
+        });
         return newStates;
       });
     }
@@ -381,46 +427,19 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     setError('');
     setPossibleSeeds([]);
     
-    // Force canvas redraw by clearing and redrawing the initial state
-    setTimeout(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Reset canvas size to normal POI view size
+    // Reset canvas size and redraw
+    const canvas = canvasRef.current;
+    if (canvas) {
       canvas.width = CANVAS_SIZE;
       canvas.height = CANVAS_SIZE;
       canvas.style.width = '';
       canvas.style.height = '';
       
-      // Clear canvas completely
-      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      
-      // Draw background
-      ctx.fillStyle = '#2b2b2b';
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      
-      // Try to load background image based on selected map
-      if (selectedMap) {
-        loadImage(MAP_IMAGES[selectedMap as keyof typeof MAP_IMAGES])
-          .then(backgroundImg => {
-            ctx.drawImage(backgroundImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            // Draw POIs as dots
-            currentPois.forEach(poi => {
-              drawPoi(ctx, poi, 'dot');
-            });
-          })
-          .catch(error => {
-            console.warn('Background image not found, using default background');
-            // Draw POIs initially as dots
-            currentPois.forEach(poi => {
-              drawPoi(ctx, poi, 'dot');
-            });
-          });
-      }
-    }, 50); // Small delay to ensure state updates are complete
+      // Use requestAnimationFrame for smooth rendering
+      requestAnimationFrame(() => {
+        drawCanvas();
+      });
+    }
   };
 
   // Generate complete map
@@ -835,45 +854,22 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     updateSeedFilteringWithStates(poiStates);
   }, [updateSeedFilteringWithStates, poiStates]);
 
-  // Draw map when dependencies change - draw dots initially, final drawing handled by drawMapWithSeedData
+  // Draw canvas when background image loads or when component mounts
   useEffect(() => {
     if (selectedMap && currentPois.length > 0 && !finalSeed && !showCompleteMap) {
-      // Draw initial dots when no final seed is identified and not showing complete map
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-      // Draw background
-      ctx.fillStyle = '#2b2b2b';
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-      // Try to load background image based on selected map
-      if (selectedMap) {
-        loadImage(MAP_IMAGES[selectedMap as keyof typeof MAP_IMAGES])
-          .then(backgroundImg => {
-            ctx.drawImage(backgroundImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            // Draw POIs on top
-            currentPois.forEach(poi => {
-              const state = poiStates[poi.id] || 'dot';
-              drawPoi(ctx, poi, state);
-            });
-          })
-          .catch(error => {
-            console.warn('Background image not found, using default background');
-            // Draw POIs initially
-            currentPois.forEach(poi => {
-              const state = poiStates[poi.id] || 'dot';
-              drawPoi(ctx, poi, state);
-            });
-          });
-      }
+      drawCanvas();
     }
-  }, [selectedMap, currentPois, finalSeed, showCompleteMap, poiStates, loadImage, drawPoi, CANVAS_SIZE]);
+  }, [selectedMap, currentPois, finalSeed, showCompleteMap, backgroundImage, drawCanvas]);
+
+  // Redraw canvas when POI states change (but avoid flicker by using optimized rendering)
+  useEffect(() => {
+    if (!finalSeed && !showCompleteMap && backgroundImage) {
+      // Use requestAnimationFrame for smooth rendering
+      requestAnimationFrame(() => {
+        drawCanvas();
+      });
+    }
+  }, [poiStates, finalSeed, showCompleteMap, backgroundImage, drawCanvas]);
 
   return (
     <div className="container mx-auto py-8 px-4">
