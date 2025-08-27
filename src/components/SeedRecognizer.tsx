@@ -49,8 +49,8 @@ interface SeedRecognizerProps {
 }
 
 export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
-  const [selectedMap, setSelectedMap] = useState<string>('');
-  const [selectedNightlord, setSelectedNightlord] = useState<string>('');
+  const [selectedMap, setSelectedMap] = useState<string>(MAPS[0]);
+  const [selectedNightlord, setSelectedNightlord] = useState<string>('Gladius');
   const [currentPois, setCurrentPois] = useState<POI[]>([]);
   const [poiStates, setPoiStates] = useState<Record<number, POIState>>({});
   const [possibleSeeds, setPossibleSeeds] = useState<SeedInfo[]>([]);
@@ -153,6 +153,16 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     });
     return states;
   }, []);
+
+  // Initialize default map and nightlord
+  useEffect(() => {
+    if (MAPS.length > 0) {
+      const defaultMap = MAPS[0];
+      const pois = POIS_BY_MAP[defaultMap as keyof typeof POIS_BY_MAP] || [];
+      setCurrentPois(pois);
+      setPoiStates(initializePoiStates(pois));
+    }
+  }, [initializePoiStates]);
 
   // Draw POI on canvas with proper icons
   const drawPoi = useCallback((ctx: CanvasRenderingContext2D, poi: POI, state: POIState) => {
@@ -377,7 +387,48 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     setFinalSeed(null);
     setShowCompleteMap(false);
     setError('');
-    // Don't call updateSeedFiltering here - let user restart recognition manually
+    setPossibleSeeds([]);
+    
+    // Force canvas redraw by clearing and redrawing the initial state
+    setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Reset canvas size to normal POI view size
+      canvas.width = CANVAS_SIZE;
+      canvas.height = CANVAS_SIZE;
+      canvas.style.width = '';
+      canvas.style.height = '';
+      
+      // Clear canvas completely
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      
+      // Draw background
+      ctx.fillStyle = '#2b2b2b';
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      
+      // Try to load background image based on selected map
+      if (selectedMap) {
+        loadImage(MAP_IMAGES[selectedMap as keyof typeof MAP_IMAGES])
+          .then(backgroundImg => {
+            ctx.drawImage(backgroundImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            // Draw POIs as dots
+            currentPois.forEach(poi => {
+              drawPoi(ctx, poi, 'dot');
+            });
+          })
+          .catch(error => {
+            console.warn('Background image not found, using default background');
+            // Draw POIs initially as dots
+            currentPois.forEach(poi => {
+              drawPoi(ctx, poi, 'dot');
+            });
+          });
+      }
+    }, 50); // Small delay to ensure state updates are complete
   };
 
   // Generate complete map
