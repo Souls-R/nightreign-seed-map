@@ -100,8 +100,8 @@ export function MapGenerator({ initialSeedId }: MapGeneratorProps) {
 
           // Save current composite operation
           const previousCompositeOperation = ctx.globalCompositeOperation;
-          // Use lighter mode for night light effect
-          ctx.globalCompositeOperation = 'lighter';
+        // Set to source-over for correct transparency handling
+          ctx.globalCompositeOperation = 'source-over';
           ctx.drawImage(nightlordImg, 0, 0);
           // Restore previous composite operation
           ctx.globalCompositeOperation = previousCompositeOperation;
