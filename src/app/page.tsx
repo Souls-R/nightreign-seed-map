@@ -10,7 +10,8 @@ export default function Home() {
 
   const handleSeedRecognized = (seedId: number) => {
     setRecognizedSeedId(seedId);
-    setShowMapGenerator(true);
+    // 不再自动跳转到MapGenerator，让SeedRecognizer内部处理
+    // setShowMapGenerator(true);
   };
 
   const handleBackToRecognizer = () => {

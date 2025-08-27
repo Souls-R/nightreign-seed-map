@@ -37,6 +37,13 @@ interface CVClassificationData {
   };
 }
 
+interface MapData {
+  maps: Record<string, any>;
+  constructs: Record<string, any[]>;
+  coordinates: Record<string, [number, number]>;
+  names: Record<string, string>;
+}
+
 interface SeedRecognizerProps {
   onSeedRecognized?: (seedId: number) => void;
 }
@@ -54,6 +61,8 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [rightClickedPoi, setRightClickedPoi] = useState<POI | null>(null);
   const [finalSeed, setFinalSeed] = useState<SeedInfo | null>(null);
   const [cvClassificationData, setCvClassificationData] = useState<CVClassificationData | null>(null);
+  const [mapData, setMapData] = useState<MapData | null>(null);
+  const [showCompleteMap, setShowCompleteMap] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -94,10 +103,23 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   }, []);
 
+  // Load map generation data
+  const loadMapData = useCallback(async () => {
+    try {
+      const response = await fetch('/maps.json');
+      const data: MapData = await response.json();
+      setMapData(data);
+      console.log('✅ Loaded map data');
+    } catch (error) {
+      console.warn('⚠️ Map data not found:', error);
+    }
+  }, []);
+
   // Load classification data on mount
   useEffect(() => {
     loadClassificationData();
-  }, [loadClassificationData]);
+    loadMapData();
+  }, [loadClassificationData, loadMapData]);
 
   // Initialize POI states
   const initializePoiStates = useCallback((pois: POI[]) => {
@@ -300,9 +322,283 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const resetMap = () => {
     setPoiStates(initializePoiStates(currentPois));
     setFinalSeed(null);
+    setShowCompleteMap(false);
     setError('');
     // Don't call updateSeedFiltering here - let user restart recognition manually
   };
+
+  // Generate complete map
+  const generateCompleteMap = useCallback(async (seedId: number) => {
+    if (!mapData || !mapData.maps[seedId.toString()]) {
+      setError('无法找到种子的地图数据');
+      return;
+    }
+
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const mapInfo = mapData.maps[seedId.toString()];
+      const backgroundName = `background_${mapInfo.Special}.png`;
+
+      // Load background image
+      const backgroundImg = await loadImage(`/static/${backgroundName}`);
+
+      // Set canvas size to match original image
+      canvas.width = backgroundImg.width;
+      canvas.height = backgroundImg.height;
+
+      // Draw background
+      ctx.drawImage(backgroundImg, 0, 0);
+
+      // Draw NightLord
+      if (mapInfo.NightLord !== undefined && mapInfo.NightLord !== null) {
+        try {
+          const nightlordImg = await loadImage(`/static/nightlord_${mapInfo.NightLord}.png`);
+          const previousCompositeOperation = ctx.globalCompositeOperation;
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.drawImage(nightlordImg, 0, 0);
+          ctx.globalCompositeOperation = previousCompositeOperation;
+        } catch (error) {
+          console.warn(`无法加载NightLord图片`);
+        }
+      }
+
+      // Draw Treasure
+      const treasureValue = mapInfo.Treasure_800;
+      const combinedValue = treasureValue * 10 + mapInfo.Special;
+      try {
+        const treasureImg = await loadImage(`/static/treasure_${combinedValue}.png`);
+        const previousCompositeOperation = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(treasureImg, 0, 0);
+        ctx.globalCompositeOperation = previousCompositeOperation;
+      } catch (error) {
+        console.warn(`无法加载Treasure图片`);
+      }
+
+      // Draw RotRew
+      if (mapInfo.RotRew_500 !== 0) {
+        try {
+          const rotrewImg = await loadImage(`/static/RotRew_${mapInfo.RotRew_500}.png`);
+          const previousCompositeOperation = ctx.globalCompositeOperation;
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.drawImage(rotrewImg, 0, 0);
+          ctx.globalCompositeOperation = previousCompositeOperation;
+        } catch (error) {
+          console.warn(`无法加载RotRew图片`);
+        }
+      }
+
+      // Draw Start
+      try {
+        const startImg = await loadImage(`/static/Start_${mapInfo.Start_190}.png`);
+        const previousCompositeOperation = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(startImg, 0, 0);
+        ctx.globalCompositeOperation = previousCompositeOperation;
+      } catch (error) {
+        console.warn(`无法加载Start图片`);
+      }
+
+      // Draw constructs
+      if (mapData.constructs && mapData.constructs[seedId.toString()]) {
+        for (const construct of mapData.constructs[seedId.toString()]) {
+          try {
+            const constructImg = await loadImage(`/static/Construct_${construct.type}.png`);
+            const coord = mapData.coordinates[construct.coord_index.toString()];
+            if (coord) {
+              const [x, y] = coord;
+              const drawX = x - constructImg.width / 2;
+              const drawY = y - constructImg.height / 2;
+              ctx.drawImage(constructImg, drawX, drawY);
+            }
+          } catch (error) {
+            console.warn(`无法加载建筑图片 Construct_${construct.type}.png`);
+          }
+        }
+      }
+
+      // Draw Night Circle images
+      const day1Loc = mapInfo.Day1Loc.toString();
+      const day2Loc = mapInfo.Day2Loc.toString();
+
+      if (mapData.coordinates && mapData.coordinates[day1Loc]) {
+        try {
+          const nightCircleImg = await loadImage('/static/night_circle.png');
+          const [x, y] = mapData.coordinates[day1Loc];
+          const drawX = x - nightCircleImg.width / 2;
+          const drawY = y - nightCircleImg.height / 2;
+          ctx.drawImage(nightCircleImg, drawX, drawY);
+        } catch (error) {
+          console.warn('无法加载night_circle图片');
+        }
+      }
+
+      if (mapData.coordinates && mapData.coordinates[day2Loc]) {
+        try {
+          const nightCircleImg = await loadImage('/static/night_circle.png');
+          const [x, y] = mapData.coordinates[day2Loc];
+          const drawX = x - nightCircleImg.width / 2;
+          const drawY = y - nightCircleImg.height / 2;
+          ctx.drawImage(nightCircleImg, drawX, drawY);
+        } catch (error) {
+          console.warn('无法加载night_circle图片');
+        }
+      }
+
+      // Draw Night Circle text labels
+      if (mapData.coordinates && mapData.coordinates[day1Loc]) {
+        const [x, y] = mapData.coordinates[day1Loc];
+        if (mapData.names && mapData.names[mapInfo.Day1Boss.toString()]) {
+          const text = "DAY1 " + mapData.names[mapInfo.Day1Boss.toString()];
+          ctx.fillStyle = '#781EF0';
+          ctx.font = '95px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          // Add text shadow
+          ctx.fillStyle = 'white';
+          ctx.fillText(text, x-3, y-3);
+          ctx.fillText(text, x-1, y-1);
+          ctx.fillStyle = 'black';
+          ctx.fillText(text, x+1, y+1);
+          ctx.fillText(text, x+3, y+3);
+          ctx.fillText(text, x+5, y+5);
+          ctx.fillText(text, x+7, y+7);
+
+          ctx.fillStyle = '#781EF0';
+          ctx.fillText(text, x, y);
+        }
+
+        if (mapInfo.extra1 !== -1 && mapData.names && mapData.names[mapInfo.extra1.toString()]) {
+          const extraText = mapData.names[mapInfo.extra1.toString()];
+          ctx.fillStyle = '#781EF0';
+          ctx.font = '95px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          ctx.fillStyle = 'white';
+          ctx.fillText(extraText, x-3, y+100);
+          ctx.fillText(extraText, x-1, y+100);
+          ctx.fillStyle = 'black';
+          ctx.fillText(extraText, x+1, y+100);
+          ctx.fillText(extraText, x+3, y+100);
+          ctx.fillText(extraText, x+5, y+100);
+          ctx.fillText(extraText, x+7, y+100);
+
+          ctx.fillStyle = '#781EF0';
+          ctx.fillText(extraText, x, y+100);
+        }
+      }
+
+      if (mapData.coordinates && mapData.coordinates[day2Loc]) {
+        const [x, y] = mapData.coordinates[day2Loc];
+        if (mapData.names && mapData.names[mapInfo.Day2Boss.toString()]) {
+          const text = "DAY2 " + mapData.names[mapInfo.Day2Boss.toString()];
+          ctx.fillStyle = '#781EF0';
+          ctx.font = '95px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          ctx.fillStyle = 'white';
+          ctx.fillText(text, x-3, y-3);
+          ctx.fillText(text, x-1, y-1);
+          ctx.fillStyle = 'black';
+          ctx.fillText(text, x+1, y+1);
+          ctx.fillText(text, x+3, y+3);
+          ctx.fillText(text, x+5, y+5);
+          ctx.fillText(text, x+7, y+7);
+
+          ctx.fillStyle = '#781EF0';
+          ctx.fillText(text, x, y);
+        }
+
+        if (mapInfo.extra2 !== -1 && mapData.names && mapData.names[mapInfo.extra2.toString()]) {
+          const extraText = mapData.names[mapInfo.extra2.toString()];
+          ctx.fillStyle = '#781EF0';
+          ctx.font = '95px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          ctx.fillStyle = 'white';
+          ctx.fillText(extraText, x-3, y+100);
+          ctx.fillText(extraText, x-1, y+100);
+          ctx.fillStyle = 'black';
+          ctx.fillText(extraText, x+1, y+100);
+          ctx.fillText(extraText, x+3, y+100);
+          ctx.fillText(extraText, x+5, y+100);
+          ctx.fillText(extraText, x+7, y+100);
+
+          ctx.fillStyle = '#781EF0';
+          ctx.fillText(extraText, x, y+100);
+        }
+      }
+
+      // Draw construct text labels
+      if (mapData.constructs && mapData.constructs[seedId.toString()]) {
+        for (const construct of mapData.constructs[seedId.toString()]) {
+          if (mapData.coordinates && mapData.coordinates[construct.coord_index.toString()] && mapData.names && mapData.names[construct.type.toString()]) {
+            const [x, y] = mapData.coordinates[construct.coord_index.toString()];
+            const text = mapData.names[construct.type.toString()];
+
+            ctx.fillStyle = '#FFFF00';
+            ctx.font = '65px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillStyle = 'black';
+            ctx.fillText(text, x+4, y+4);
+            ctx.fillText(text, x-4, y-4);
+
+            ctx.fillStyle = '#FFFF00';
+            ctx.fillText(text, x, y);
+          }
+        }
+      }
+
+      // Draw event description text
+      let eventText = '';
+      if (mapInfo.EventFlag === 7705 || mapInfo.EventFlag === 7725) {
+        const eventFlagName = (mapData.names && mapData.names[mapInfo.EventFlag.toString()]) || mapInfo.EventFlag.toString();
+        const eventValueName = (mapData.names && mapData.names[mapInfo['Event_30*0'].toString()]) || mapInfo['Event_30*0'].toString();
+        eventText = `特殊事件：${eventFlagName} ${eventValueName}`;
+      } else {
+        const eventFlagName = (mapData.names && mapData.names[mapInfo.EventFlag.toString()]) || mapInfo.EventFlag.toString();
+        eventText = `特殊事件：${eventFlagName}`;
+      }
+
+      if (eventText) {
+        const eventX = 1200;
+        const eventY = 4300;
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '160px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+
+        ctx.fillStyle = '#730FE6';
+        ctx.fillText(eventText, eventX+15, eventY+15);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(eventText, eventX, eventY);
+      }
+
+      // Scale canvas to 1/5 size for display
+      const scale = 0.2;
+      const scaledWidth = canvas.width * scale;
+      const scaledHeight = canvas.height * scale;
+      canvas.style.width = scaledWidth + 'px';
+      canvas.style.height = scaledHeight + 'px';
+
+      setShowCompleteMap(true);
+    } catch (error) {
+      console.error('生成完整地图失败:', error);
+      setError('生成完整地图失败: ' + (error as Error).message);
+    }
+  }, [mapData, loadImage]);
 
   // Update seed filtering
   const updateSeedFiltering = useCallback(() => {
@@ -394,26 +690,29 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     setPossibleSeeds(seedInfos);
     setLoading(false);
 
-    // If only one seed remains, show it and call the callback after a short delay
+    // If only one seed remains, show it and generate complete map
     if (seedInfos.length === 1) {
       const finalSeedData = filteredSeeds[0];
       setFinalSeed(seedInfos[0]);
 
-      // Call the callback after a short delay to show success message
+      // Generate complete map after a short delay
       setTimeout(() => {
+        generateCompleteMap(finalSeedData.seedNumber);
+        // Call the callback if provided
         if (onSeedRecognized) {
           onSeedRecognized(finalSeedData.seedNumber);
         }
       }, 2000); // 2 second delay to show success message
     } else {
       setFinalSeed(null);
+      setShowCompleteMap(false);
     }
-  }, [selectedNightlord, selectedMap, currentPois, poiStates, cvClassificationData]);
+  }, [selectedNightlord, selectedMap, currentPois, poiStates, cvClassificationData, generateCompleteMap]);
 
   // Draw map when dependencies change - draw dots initially, final drawing handled by drawMapWithSeedData
   useEffect(() => {
-    if (selectedMap && currentPois.length > 0 && !finalSeed) {
-      // Draw initial dots when no final seed is identified
+    if (selectedMap && currentPois.length > 0 && !finalSeed && !showCompleteMap) {
+      // Draw initial dots when no final seed is identified and not showing complete map
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -446,7 +745,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           });
       }
     }
-  }, [selectedMap, currentPois, finalSeed, loadImage, drawPoi, CANVAS_SIZE]);
+  }, [selectedMap, currentPois, finalSeed, showCompleteMap, loadImage, drawPoi, CANVAS_SIZE]);
 
   // Hide context menu when clicking elsewhere
   useEffect(() => {
@@ -541,14 +840,24 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                 ref={canvasRef}
                 width={CANVAS_SIZE}
                 height={CANVAS_SIZE}
-                onClick={handleCanvasClick}
-                onContextMenu={handleCanvasContextMenu}
-                className="border border-gray-300 cursor-crosshair"
+                onClick={showCompleteMap ? undefined : handleCanvasClick}
+                onContextMenu={showCompleteMap ? undefined : handleCanvasContextMenu}
+                className={`border border-gray-300 ${showCompleteMap ? 'cursor-default' : 'cursor-crosshair'}`}
                 style={{ maxWidth: '100%', height: 'auto' }}
               />
 
+              {/* Complete Map Overlay */}
+              {showCompleteMap && (
+                <div className="absolute top-4 left-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">🎯</span>
+                    <span className="font-semibold">完整地图已生成</span>
+                  </div>
+                </div>
+              )}
+
               {/* Context Menu */}
-              {showContextMenu && (
+              {showContextMenu && !showCompleteMap && (
                 <div
                   ref={contextMenuRef}
                   className="absolute bg-white border border-gray-300 rounded shadow-lg py-2 z-10"
@@ -585,7 +894,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                 </div>
               )}
 
-
             </div>
           </div>
 
@@ -600,7 +908,32 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
             {error && <p className="text-red-600">{error}</p>}
             {!loading && !error && selectedMap && selectedNightlord && (
               <>
-                {possibleSeeds.length > 1 ? (
+                {showCompleteMap ? (
+                  <div className="space-y-4 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                    <div className="text-center space-y-3">
+                      <div className="text-4xl">🗺️</div>
+                      <p className="text-blue-700 font-bold text-xl">
+                        地图生成完成！
+                      </p>
+                      <div className="bg-white p-4 rounded-lg shadow-sm border">
+                        <p className="text-blue-600 text-lg">
+                          种子ID: <span className="font-bold text-2xl text-blue-800">{finalSeed?.seedId}</span>
+                        </p>
+                        <p className="text-blue-600 mt-2">
+                          Nightlord: <span className="font-semibold">{finalSeed?.nightlord}</span> |
+                          地图: <span className="font-semibold">{finalSeed?.map}</span>
+                        </p>
+                      </div>
+                      <Button
+                        onClick={resetMap}
+                        variant="outline"
+                        className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      >
+                        🔄 重新识别种子
+                      </Button>
+                    </div>
+                  </div>
+                ) : possibleSeeds.length > 1 ? (
                   <p className="text-blue-600">
                     可能的种子数量: {possibleSeeds.length} - 继续标记POI以缩小范围
                   </p>
@@ -622,7 +955,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                       </div>
                       <div className="flex items-center justify-center space-x-2 text-green-600">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                        <p>正在生成地图...</p>
+                        <p>正在生成完整地图...</p>
                       </div>
                     </div>
                   </div>
