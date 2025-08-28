@@ -76,6 +76,27 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     'Libra', 'Fulghor', 'Caligo', 'Heolstor'
   ];
 
+  // Minimal i18n: display labels only (values unchanged)
+  const NIGHTLORD_LABELS: Record<string, string> = {
+    Gladius: '三头野兽',
+    Adel: '碎身巨颚',
+    Gnoster: '慧心虫',
+    Maris: '征兆',
+    Libra: '平衡法律的魔物',
+    Fulghor: '暗中飞驰的猎人',
+    Caligo: '雾中裂缝',
+    Heolstor: '黑夜化形者'
+  };
+
+  // Only translate the four terrains; others remain as original
+  const MAP_LABELS: Record<string, string> = {
+    'Default': '无特异地形',
+    Mountaintop: '山顶',
+    Crater: '火山口',
+    'Rotted Woods': '腐败森林',
+    Noklateo: '“隐城”诺克拉缇欧'
+  };
+
   // Load background image
   const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
     // Check if image is already loaded
@@ -917,14 +938,14 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
-                {NIGHTLORDS.map((nightlord) => (
+        {NIGHTLORDS.map((nightlord) => (
                   <Button
                     key={nightlord}
                     onClick={() => handleNightlordSelect(nightlord)}
                     variant="ghost"
                     className={selectedNightlord === nightlord ? "rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-4 py-2 text-sm font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors" : "rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors"}
                   >
-                    {nightlord}
+          {NIGHTLORD_LABELS[nightlord] ?? nightlord}
                   </Button>
                 ))}
               </div>
@@ -939,14 +960,14 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
-                {MAPS.map((map) => (
+        {MAPS.map((map) => (
                   <Button
                     key={map}
                     onClick={() => handleMapSelect(map)}
                     variant="ghost"
                     className={selectedMap === map ? "rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-4 py-2 text-sm font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors" : "rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors"}
                   >
-                    {map}
+          {MAP_LABELS[map] ?? map}
                   </Button>
                 ))}
               </div>
@@ -994,7 +1015,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                             )}
                           </div>
                         ) : (
-                          <div>未发现任何种子，已标记: {Object.values(poiStates).filter(state => state !== 'dot').length} 个POI</div>
+                          <div>未发现任何种子，已标记: {Object.values(poiStates).filter(state => state !== 'dot').length} 个建筑地点</div>
                         )}
                       </>
                     )}
