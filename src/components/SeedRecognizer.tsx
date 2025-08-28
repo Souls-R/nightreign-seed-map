@@ -3,9 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { MAPS, POIS_BY_MAP, MAP_IMAGES } from "@/lib/seedData";
-import { filehash, fileMap } from "@/lib/fileRemap";
+import { fileMap } from "@/lib/fileRemap";
 
 interface POI {
   id: number;
@@ -77,7 +76,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     'Libra', 'Fulghor', 'Caligo', 'Heolstor'
   ];
 
-  // Load background image、
+  // Load background image
   const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
     // Check if image is already loaded
     if (loadedImages.current.has(src)) {
@@ -757,7 +756,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       ctx.drawImage(tempCanvas, 0, 0);
 
       // Scale canvas to 1/5 size for display
-      const scale = 0.2;
+      const scale = 0.162;
       const scaledWidth = canvas.width * scale;
       const scaledHeight = canvas.height * scale;
       canvas.style.width = scaledWidth + 'px';
@@ -905,186 +904,128 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   }, [poiStates, finalSeed, showCompleteMap, backgroundImage, drawCanvas]);
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <Card className="max-w-6xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">
-            艾尔登法环：黑夜君临地图种子识别
-          </CardTitle>
-          <p className="text-center text-muted-foreground">
-            通过在地图上点击POI来识别Nightreign地图种子
-          </p>
-          <div className="text-center text-sm text-muted-foreground mt-4 space-y-2">
-            <p>
-              艾尔登法环：黑夜君临实际上只有预制的320张地图，8个夜王每个夜王40张，按地形分配普通20+雪山5+火山5+腐败5+隐城5。
-            </p>
-            <p>
-              所以你可以在游戏一开始即可通过特定位置的教堂等地标识别种子，并获得地图的以下信息：
-            </p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>缩圈位置</li>
-              <li>每晚boss的信息</li>
-              <li>野外boss的信息</li>
-              <li>封印监牢的信息</li>
-              <li>主城类型（失乡，熔炉，山妖）</li>
-            </ul>
-            <p className="mt-4">
-              <a 
-                href="https://github.com/Souls-R/nightreign-seed-map" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                查看GitHub仓库
-              </a>
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Selection Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nightlord Selection */}
-            <div className="space-y-2">
-              <Label>选择Nightlord</Label>
+    <div className="p-4 md:p-6 lg:p-8">
+      {/* Two-column layout: controls (left) and canvas (right) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Left: Control Panel */}
+        <div className="xl:col-span-4 space-y-6">
+          <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
+            <CardHeader>
+              <CardTitle className="text-amber-200 tracking-wide font-semibold">
+                选择夜王
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
                 {NIGHTLORDS.map((nightlord) => (
                   <Button
                     key={nightlord}
                     onClick={() => handleNightlordSelect(nightlord)}
-                    variant={selectedNightlord === nightlord ? 'default' : 'outline'}
-                    className="w-full"
+                    variant="ghost"
+                    className={selectedNightlord === nightlord ? "rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-4 py-2 text-sm font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors" : "rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors"}
                   >
                     {nightlord}
                   </Button>
                 ))}
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Map Selection */}
-            <div className="space-y-2">
-              <Label>选择地图类型</Label>
+          <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
+            <CardHeader>
+              <CardTitle className="text-amber-200 tracking-wide font-semibold">
+                选择地图类型
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
                 {MAPS.map((map) => (
                   <Button
                     key={map}
                     onClick={() => handleMapSelect(map)}
-                    variant={selectedMap === map ? 'default' : 'outline'}
-                    className="w-full"
+                    variant="ghost"
+                    className={selectedMap === map ? "rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-4 py-2 text-sm font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors" : "rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors"}
                   >
                     {map}
                   </Button>
                 ))}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Instructions and Status */}
           {selectedMap && selectedNightlord && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">使用说明</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-4 h-4 bg-orange-500 rounded-full"></span>
-                    <span><strong>左键</strong>：选择教堂</span>
-                    <span className="w-4 h-4 bg-purple-500 rounded-full"></span>
-                    <span><strong>右键</strong>：选择法师塔或村庄</span>
-                  </div>
+            <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
+              <CardHeader>
+                <CardTitle className="text-amber-200 tracking-wide font-semibold">使用说明</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 text-sm text-amber-100/80 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="inline-block w-3 h-3 rounded-full bg-[#ecef41]"></span>
+                  <span>左键：标记教堂，再次点击取消</span>
                 </div>
-                <div className="flex flex-col items-end space-y-2">
-                  <Button onClick={resetMap} variant="outline" size="sm">
-                    重置地图
-                  </Button>
-                  
-                  {/* Status Information */}
-                  <div className="text-right space-y-1">
+                <div className="flex items-center gap-3">
+                  <span className="inline-block w-3 h-3 rounded-full bg-purple-500"></span>
+                  <span>右键：在法师塔 / 村庄 / 未知之间循环</span>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <Button onClick={resetMap} variant="outline" size="sm" className="rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors">重置地图</Button>
+                  <div className="text-xs text-amber-200/80 text-right space-y-1">
                     {loading && (
-                      <div className="flex items-center space-x-2 text-blue-600">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                        <span className="text-xs">生成中...</span>
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
+                        <span>生成中...</span>
                       </div>
                     )}
-                    {error && <p className="text-red-600 text-xs">{error}</p>}
+                    {error && <p className="text-red-400">{error}</p>}
                     {!loading && !error && (
                       <>
                         {showCompleteMap ? (
-                          <div className="text-green-600 text-xs">
-                            ✅ 种子: <span className="font-bold">{finalSeed?.seedId}</span>
-                          </div>
+                          <div>✅ 种子: <span className="font-bold text-amber-300">{finalSeed?.seedId}</span></div>
                         ) : possibleSeeds.length > 1 ? (
-                          <div className="text-blue-600 text-xs">
-                            🔍 匹配种子: {possibleSeeds.length}
-                          </div>
+                          <div>🔍 匹配种子: {possibleSeeds.length}</div>
                         ) : possibleSeeds.length === 1 ? (
                           <div className="space-y-1">
-                            <div className="text-green-600 text-xs">
-                              🎉 识别成功！种子: <span className="font-bold">{possibleSeeds[0].seedId}</span>
-                            </div>
+                            <div>🎉 识别成功！种子: <span className="font-bold text-amber-300">{possibleSeeds[0].seedId}</span></div>
                             {isGeneratingMap && (
-                              <div className="flex items-center space-x-1 text-green-600">
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600"></div>
-                                <span className="text-xs">生成地图中...</span>
+                              <div className="flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
+                                <span>生成地图中...</span>
                               </div>
                             )}
                           </div>
                         ) : (
-                          <div className="text-gray-600 text-xs">
-                            未发现任何种子，已标记: {Object.values(poiStates).filter(state => state !== 'dot').length} POI
-                          </div>
+                          <div>未发现任何种子，已标记: {Object.values(poiStates).filter(state => state !== 'dot').length} 个POI</div>
                         )}
                       </>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
+        </div>
 
-          {/* Canvas Section */}
-          <div className="flex justify-center">
-            <div className="relative">
-              <canvas
-                ref={canvasRef}
-                width={CANVAS_SIZE}
-                height={CANVAS_SIZE}
-                onClick={showCompleteMap ? undefined : handleCanvasClick}
-                onContextMenu={showCompleteMap ? undefined : handleCanvasContextMenu}
-                className={`border border-gray-300 ${showCompleteMap ? 'cursor-default' : 'cursor-crosshair'}`}
-                style={{ maxWidth: '100%', height: 'auto' }}
-              />
-            </div>
-          </div>
-
-          {/* Complete Map Results */}
-          {/* {showCompleteMap && (
-            <div className="space-y-4 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
-              <div className="text-center space-y-3">
-                <div className="text-4xl">🗺️</div>
-                <p className="text-blue-700 font-bold text-xl">
-                  地图生成完成！
-                </p>
-                <div className="bg-white p-4 rounded-lg shadow-sm border">
-                  <p className="text-blue-600 text-lg">
-                    种子ID: <span className="font-bold text-2xl text-blue-800">{finalSeed?.seedId}</span>
-                  </p>
-                  <p className="text-blue-600 mt-2">
-                    Nightlord: <span className="font-semibold">{finalSeed?.nightlord}</span> |
-                    地图: <span className="font-semibold">{finalSeed?.map}</span>
-                  </p>
+        {/* Right: Map Canvas */}
+        <div className="xl:col-span-8">
+          <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
+            <CardContent className="pt-6">
+              <div className="flex justify-center">
+                <div className="relative rounded-lg border border-yellow-900/30 bg-black/40 overflow-hidden">
+                  <canvas
+                    ref={canvasRef}
+                    width={CANVAS_SIZE}
+                    height={CANVAS_SIZE}
+                    onClick={showCompleteMap ? undefined : handleCanvasClick}
+                    onContextMenu={showCompleteMap ? undefined : handleCanvasContextMenu}
+                    className={`${showCompleteMap ? 'cursor-default' : 'cursor-crosshair'} block`}
+                    style={{ maxWidth: '100%', height: 'auto' }}
+                  />
                 </div>
-                <Button
-                  onClick={resetMap}
-                  variant="outline"
-                  className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  🔄 重新识别种子
-                </Button>
               </div>
-            </div>
-          )} */}
-
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
