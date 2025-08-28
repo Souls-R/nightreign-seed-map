@@ -1000,23 +1000,23 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                     {error && <p className="text-red-400">{error}</p>}
                     {!loading && !error && (
                       <>
-                        {showCompleteMap ? (
-                          <div>✅ 种子: <span className="font-bold text-amber-300">{finalSeed?.seedId}</span></div>
-                        ) : possibleSeeds.length > 1 ? (
-                          <div>🔍 匹配种子: {possibleSeeds.length}</div>
-                        ) : possibleSeeds.length === 1 ? (
-                          <div className="space-y-1">
-                            <div>🎉 识别成功！种子: <span className="font-bold text-amber-300">{possibleSeeds[0].seedId}</span></div>
-                            {isGeneratingMap && (
-                              <div className="flex items-center gap-2">
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
-                                <span>生成地图中...</span>
-                              </div>
-                            )}
+                      {showCompleteMap ? (
+                        <div className="text-lg">✅ 种子ID: <span className="font-bold text-amber-300 text-xl">{finalSeed?.seedId}</span></div>
+                      ) : possibleSeeds.length > 1 ? (
+                        <div className="text-lg">🔍 匹配种子: <span className="font-bold text-amber-300 text-xl">{possibleSeeds.length}</span></div>
+                      ) : possibleSeeds.length === 1 ? (
+                        <div className="space-y-1 text-lg">
+                        <div>🎉 识别成功！种子ID: <span className="font-bold text-amber-300 text-xl">{possibleSeeds[0].seedId}</span></div>
+                        {isGeneratingMap && (
+                          <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
+                          <span className="text-base">生成地图中...</span>
                           </div>
-                        ) : (
-                          <div>未发现任何种子，已标记: {Object.values(poiStates).filter(state => state !== 'dot').length} 个建筑地点</div>
                         )}
+                        </div>
+                      ) : (
+                        <div className="text-lg">未发现任何种子，已标记: <span className="font-bold text-amber-300 text-xl">{Object.values(poiStates).filter(state => state !== 'dot').length}</span> 个建筑地点</div>
+                      )}
                       </>
                     )}
                   </div>
