@@ -1039,6 +1039,9 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
               </CardHeader>
               <CardContent className="pt-0 text-sm text-amber-100/80 space-y-4">
                 <div className="flex items-center gap-3">
+                  <span>对比游戏地图，在右侧的相应位置标注一些建筑以识别种子</span>
+                </div>
+                <div className="flex items-center gap-3">
                   <span className="inline-block w-3 h-3 rounded-full bg-[#ecef41]"></span>
                   <span>左键：标记教堂，再次点击取消</span>
                 </div>
@@ -1046,12 +1049,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                   <span className="inline-block w-3 h-3 rounded-full bg-purple-500"></span>
                   <span>右键：在法师塔 / 村庄 / 未知之间循环</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex w-4 h-4 rounded-full border-2 border-amber-300 items-center justify-center">
-                    <span className="text-xs text-amber-300">全屏</span>
-                  </span>
-                  <span>识别成功后，点击地图任意位置可全屏查看</span>
-                </div>
+
                 <div className="flex items-center justify-between pt-2">
                   <Button onClick={resetMap} variant="outline" size="sm" className="rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors">重置地图</Button>
                   <div className="text-xs text-amber-200/80 text-right space-y-1">
@@ -1070,11 +1068,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                         <div className="text-lg">🔍 匹配种子: <span className="font-bold text-amber-300 text-xl">{possibleSeeds.length}</span></div>
                       ) : possibleSeeds.length === 1 ? (
                         <div className="space-y-1 text-lg">
-                        <div>🎉 识别成功！种子ID: <span className="font-bold text-amber-300 text-xl">{possibleSeeds[0].seedId}</span></div>
+                        <div>识别成功！种子ID: <span className="font-bold text-amber-300 text-xl">{possibleSeeds[0].seedId}</span></div>
                         {isGeneratingMap && (
                           <div className="flex items-center gap-2">
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
-                          <span className="text-base">生成地图中...</span>
+                          <span className="text-base">首次生成地图下载素材较慢请耐心等待..</span>
                           </div>
                         )}
                         </div>
