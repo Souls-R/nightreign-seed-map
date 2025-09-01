@@ -38,7 +38,7 @@ export default function Page() {
             <div className="flex items-center gap-3">
 
               <a
-                href="https://github.com/Souls-R/nightreign-seed-map#readme"
+                href="https://github.com/Souls-R/nightreign-seed-map"
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-3 py-1.5 text-xs font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors"
