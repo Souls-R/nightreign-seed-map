@@ -10,7 +10,8 @@
 - 主城类型（失乡，熔炉，山妖）
 
 ## 使用
-
+[https://nightreign-seed.help/](https://nightreign-seed.help/)
+或
 [https://nightreign-seed-map.vercel.app/](https://nightreign-seed-map.vercel.app/)
 
 ## todo
