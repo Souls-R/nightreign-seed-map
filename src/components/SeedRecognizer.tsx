@@ -63,6 +63,8 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [isGeneratingMap, setIsGeneratingMap] = useState(false);
   const [poiImages, setPoiImages] = useState<Record<string, HTMLImageElement>>({});
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenScale, setFullscreenScale] = useState(1);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const loadedImages = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -363,8 +365,15 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }) || null;
   };
 
-  // Handle canvas click (left click for church toggle)
+  // Handle canvas click (left click for church toggle or fullscreen)
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    // If showCompleteMap is true, clicking anywhere toggles fullscreen
+    if (showCompleteMap) {
+      toggleFullscreen();
+      return;
+    }
+
+    // Otherwise, handle POI marking logic (only when not in complete map mode)
     if (!selectedMap || !selectedNightlord) {
       setError('请先选择地图和Nightlord');
       return;
@@ -402,6 +411,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         });
       }
     }
+    // Note: Removed the else clause that toggled fullscreen on empty area click
   };
 
   // Handle canvas right click (cycle through mage -> village -> dot)
@@ -467,6 +477,34 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       });
     }
   };
+
+  // Toggle fullscreen mode
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    setFullscreenScale(1); // Reset scale when toggling
+  };
+
+  // Handle wheel zoom in fullscreen
+  const handleFullscreenWheel = useCallback((event: WheelEvent) => {
+    if (!isFullscreen) return;
+    
+    event.preventDefault();
+    const delta = event.deltaY > 0 ? 0.9 : 1.1;
+    setFullscreenScale(prev => Math.max(0.1, Math.min(5, prev * delta)));
+  }, [isFullscreen]);
+
+  // Handle background click to close fullscreen
+  const handleBackgroundClick = useCallback((event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    
+    // Don't close if clicking on canvas, button, or their children
+    if (target.tagName === 'CANVAS' || target.closest('button') || target.closest('svg')) {
+      return;
+    }
+    
+    // Close fullscreen if clicking on the background
+    toggleFullscreen();
+  }, []);
 
   // Generate complete map
   const generateCompleteMap = useCallback(async (seedId: number) => {
@@ -924,10 +962,30 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   }, [poiStates, finalSeed, showCompleteMap, backgroundImage, drawCanvas]);
 
+  // Handle fullscreen events
+  useEffect(() => {
+    if (isFullscreen) {
+      document.addEventListener('wheel', handleFullscreenWheel, { passive: false });
+      
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.removeEventListener('wheel', handleFullscreenWheel);
+      
+      // Restore body scroll
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('wheel', handleFullscreenWheel);
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen, handleFullscreenWheel]);
+
   return (
-    <div className="p-4 md:p-6 lg:p-8">
+    <div className="p-2 md:p-3 lg:p-4">
       {/* Two-column layout: controls (left) and canvas (right) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         {/* Left: Control Panel */}
         <div className="xl:col-span-4 space-y-6">
           <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
@@ -988,6 +1046,12 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                   <span className="inline-block w-3 h-3 rounded-full bg-purple-500"></span>
                   <span>右键：在法师塔 / 村庄 / 未知之间循环</span>
                 </div>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex w-4 h-4 rounded-full border-2 border-amber-300 items-center justify-center">
+                    <span className="text-xs text-amber-300">全屏</span>
+                  </span>
+                  <span>识别成功后，点击地图任意位置可全屏查看</span>
+                </div>
                 <div className="flex items-center justify-between pt-2">
                   <Button onClick={resetMap} variant="outline" size="sm" className="rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors">重置地图</Button>
                   <div className="text-xs text-amber-200/80 text-right space-y-1">
@@ -1028,25 +1092,88 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
         {/* Right: Map Canvas */}
         <div className="xl:col-span-8">
-          <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
-            <CardContent className="pt-6">
-              <div className="flex justify-center">
+          <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)] py-2">
+            <CardContent className="pt-0">
+              <div className="flex justify-center relative">
                 <div className="relative rounded-lg border border-yellow-900/30 bg-black/40 overflow-hidden">
                   <canvas
                     ref={canvasRef}
                     width={CANVAS_SIZE}
                     height={CANVAS_SIZE}
-                    onClick={showCompleteMap ? undefined : handleCanvasClick}
+                    onClick={handleCanvasClick}
                     onContextMenu={showCompleteMap ? undefined : handleCanvasContextMenu}
-                    className={`${showCompleteMap ? 'cursor-default' : 'cursor-crosshair'} block`}
+                    className={`${showCompleteMap ? 'cursor-pointer' : 'cursor-crosshair'} block`}
                     style={{ maxWidth: '100%', height: 'auto' }}
                   />
+                  {/* Fullscreen button */}
+                  <Button
+                    onClick={toggleFullscreen}
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 rounded-md bg-black/50 text-amber-200 hover:bg-black/70 hover:text-amber-300 transition-colors p-2"
+                    title="全屏查看"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                    </svg>
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Fullscreen Modal */}
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8 cursor-pointer"
+          onClick={handleBackgroundClick}
+        >
+          <div className="relative w-full h-full max-w-[calc(100vw-4rem)] max-h-[calc(100vh-4rem)]">
+            <div className="relative w-full h-full rounded-lg border border-yellow-900/30 bg-black/40 overflow-hidden flex items-center justify-center">
+              <canvas
+                ref={(el) => {
+                  if (el && canvasRef.current) {
+                    const ctx = el.getContext('2d');
+                    const sourceCtx = canvasRef.current.getContext('2d');
+                    if (ctx && sourceCtx) {
+                      el.width = canvasRef.current.width;
+                      el.height = canvasRef.current.height;
+                      ctx.drawImage(canvasRef.current, 0, 0);
+                    }
+                  }
+                }}
+                className="max-w-full max-h-full block transition-transform duration-100"
+                style={{
+                  width: 'auto',
+                  height: '100%',
+                  objectFit: 'contain',
+                  transform: `scale(${fullscreenScale})`,
+                  transformOrigin: 'center center',
+                  cursor: 'zoom-in'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              {/* Close button */}
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFullscreen();
+                }}
+                variant="ghost"
+                size="sm"
+                className="absolute top-4 right-4 rounded-md bg-black/50 text-amber-200 hover:bg-black/70 hover:text-amber-300 transition-colors p-3"
+                title="关闭全屏"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
