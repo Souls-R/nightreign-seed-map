@@ -68,6 +68,9 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Image cache to avoid repeated downloads
+  const imageCache = useRef<Map<string, Promise<HTMLImageElement>>>(new Map());
+
   const CANVAS_SIZE = 768;
   const ICON_SIZE = 38;
 
@@ -99,15 +102,27 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   };
 
   // Load background image
-  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        resolve(img);
-      };
-      img.onerror = reject;
-      img.src = src;
-    });
+  const loadImage = useCallback(async (src: string): Promise<HTMLImageElement> => {
+    if (imageCache.current.has(src)) {
+      return imageCache.current.get(src)!;
+    }
+    const promise = fetch(src)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load image: ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        return new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = URL.createObjectURL(blob);
+        });
+      });
+    imageCache.current.set(src, promise);
+    return promise;
   }, []);
 
   // Load CV classification data
