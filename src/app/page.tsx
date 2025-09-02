@@ -18,10 +18,10 @@ export default function Page() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div className="max-w-3xl">
               <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-200 drop-shadow-[0_0_8px_rgba(234,179,8,0.25)]">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-200 drop-shadow-[0_0_8px_rgba(234,179,8,0.25)] max-sm:text-3xl">
                   艾尔登法环：黑夜君临
                 </span>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-white to-slate-300 pl-8 drop-shadow-[0_0_8px_rgba(220,220,220,0.18)]">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-white to-slate-300 xl:pl-8 max-sm:text-3xl drop-shadow-[0_0_8px_rgba(220,220,220,0.18)]">
                   地图种子识别
                 </span>
               </h1>

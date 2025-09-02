@@ -959,12 +959,27 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       canvas.height = tempCanvas.height;
       ctx.drawImage(tempCanvas, 0, 0);
 
-      // Scale canvas to 1/5 size for display
+      // Scale canvas to 1/5 size for display, but maintain square aspect ratio on small screens
       const scale = 0.162;
       const scaledWidth = canvas.width * scale;
       const scaledHeight = canvas.height * scale;
-      canvas.style.width = scaledWidth + 'px';
-      canvas.style.height = scaledHeight + 'px';
+      
+      // On small screens, ensure the map remains square
+      const isSmallScreen = window.innerWidth < 640; // sm breakpoint
+      if (isSmallScreen) {
+        const squareSize = Math.min(scaledWidth, scaledHeight);
+        canvas.style.width = squareSize + 'px';
+        canvas.style.height = squareSize + 'px';
+        canvas.style.maxWidth = '100%';
+        canvas.style.maxHeight = '100%';
+        canvas.style.objectFit = 'contain';
+      } else {
+        canvas.style.width = scaledWidth + 'px';
+        canvas.style.height = scaledHeight + 'px';
+        canvas.style.maxWidth = '';
+        canvas.style.maxHeight = '';
+        canvas.style.objectFit = '';
+      }
 
       setShowCompleteMap(true);
       setIsGeneratingMap(false);
@@ -1243,27 +1258,27 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)] py-2">
             <CardContent className="pt-0">
               <div className="flex justify-center relative">
-                <div className="relative rounded-lg border border-yellow-900/30 bg-black/40 overflow-hidden">
+                <div className="relative rounded-lg border border-yellow-900/30 bg-black/40 overflow-hidden max-w-full max-sm:aspect-square max-sm:flex max-sm:items-center max-sm:justify-center">
                   <canvas
-                    ref={canvasRef}
-                    width={CANVAS_SIZE}
-                    height={CANVAS_SIZE}
-                    onClick={handleCanvasClick}
-                    onContextMenu={showCompleteMap ? undefined : handleCanvasContextMenu}
-                    className={`${showCompleteMap ? 'cursor-pointer' : 'cursor-crosshair'} block`}
-                    style={{ maxWidth: '100%', height: 'auto' }}
+                  ref={canvasRef}
+                  width={CANVAS_SIZE}
+                  height={CANVAS_SIZE}
+                  onClick={handleCanvasClick}
+                  onContextMenu={showCompleteMap ? undefined : handleCanvasContextMenu}
+                  className={`${showCompleteMap ? 'cursor-pointer' : 'cursor-crosshair'} block max-sm:max-w-full max-sm:max-h-full max-sm:object-contain`}
+                  style={{ maxWidth: '100%', height: 'auto' }}
                   />
                   {/* Fullscreen button */}
                   <Button
-                    onClick={toggleFullscreen}
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-2 right-2 rounded-md bg-black/50 text-amber-200 hover:bg-black/70 hover:text-amber-300 transition-colors p-2"
-                    title="全屏查看"
+                  onClick={toggleFullscreen}
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 rounded-md bg-black/50 text-amber-200 hover:bg-black/70 hover:text-amber-300 transition-colors p-2"
+                  title="全屏查看"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                    </svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                  </svg>
                   </Button>
                 </div>
               </div>
@@ -1298,7 +1313,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                     }
                   }
                 }}
-                className="max-w-full max-h-full block"
+                className="max-w-full max-h-full block object-contain"
                 style={{
                   width: 'auto',
                   height: '100%',
