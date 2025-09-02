@@ -1,3 +1,5 @@
+const CDN_BASE_URL = 'https://pic.nightreign-seed.help';
+
 // Point of Interest data for each map
 const POIS_BY_MAP = {
   Default: [
@@ -62,13 +64,13 @@ const POIS_BY_MAP = {
 };
 
 
-// Map background images (local paths)
+// Map background images (CDN paths)
 const MAP_IMAGES = {
-  Default: "/poi-assets/Default-POI.png",
-  Mountaintop: "/poi-assets/Mountaintop-POI.png",
-  Crater: "/poi-assets/Crater-POI.png",
-  Noklateo: "/poi-assets/Noklateo-POI.png",
-  "Rotted Woods": "/poi-assets/RottedWoods-POI.png"
+  Default: `${CDN_BASE_URL}/poi-assets/Default-POI.png`,
+  Mountaintop: `${CDN_BASE_URL}/poi-assets/Mountaintop-POI.png`,
+  Crater: `${CDN_BASE_URL}/poi-assets/Crater-POI.png`,
+  Noklateo: `${CDN_BASE_URL}/poi-assets/Noklateo-POI.png`,
+  "Rotted Woods": `${CDN_BASE_URL}/poi-assets/RottedWoods-POI.png`
 };
 
 // Constants

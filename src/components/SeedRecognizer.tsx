@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,9 +63,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenScale, setFullscreenScale] = useState(1);
+  const [db, setDb] = useState<IDBDatabase | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const loadedImages = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  const CDN_BASE_URL = 'https://pic.nightreign-seed.help';
 
   const CANVAS_SIZE = 768;
   const ICON_SIZE = 38;
@@ -99,24 +99,155 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     Noklateo: '“隐城”诺克拉缇欧'
   };
 
-  // Load background image
-  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
-    // Check if image is already loaded
-    if (loadedImages.current.has(src)) {
-      return Promise.resolve(loadedImages.current.get(src)!);
+  // Initialize IndexedDB for image caching
+  useEffect(() => {
+    const request = indexedDB.open('ImageCache', 1);
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains('images')) {
+        db.createObjectStore('images');
+      }
+    };
+    request.onsuccess = (event) => {
+      setDb((event.target as IDBOpenDBRequest).result);
+      // Preload background images after DB is ready
+      preloadBackgroundImages((event.target as IDBOpenDBRequest).result);
+    };
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event);
+    };
+  }, []);
+
+  // Preload background images
+  const preloadBackgroundImages = useCallback(async (db: IDBDatabase) => {
+    const backgroundUrls = [
+      `${CDN_BASE_URL}/static/background_0.png`,
+      `${CDN_BASE_URL}/static/background_1.png`,
+      `${CDN_BASE_URL}/static/background_2.png`,
+      `${CDN_BASE_URL}/static/background_3.png`,
+      `${CDN_BASE_URL}/static/background_5.png`
+    ];
+
+    const poiUrls = [
+      `${CDN_BASE_URL}/poi-assets/church.png`,
+      `${CDN_BASE_URL}/poi-assets/mage-tower.png`,
+      `${CDN_BASE_URL}/poi-assets/village.png`,
+      `${CDN_BASE_URL}/poi-assets/Default-POI.png`,
+      `${CDN_BASE_URL}/poi-assets/Mountaintop-POI.png`,
+      `${CDN_BASE_URL}/poi-assets/Crater-POI.png`,
+      `${CDN_BASE_URL}/poi-assets/RottedWoods-POI.png`,
+      `${CDN_BASE_URL}/poi-assets/Noklateo-POI.png`
+    ];
+
+    const allUrls = [...backgroundUrls, ...poiUrls];
+
+    console.log('🔄 Checking and preloading images...');
+
+    for (const url of allUrls) {
+      try {
+        const transaction = db.transaction(['images'], 'readonly');
+        const store = transaction.objectStore('images');
+        const request = store.get(url);
+
+        request.onsuccess = () => {
+          if (!request.result) {
+            // Image not cached, preload it
+            console.log(`📥 Preloading: ${url}`);
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              // Convert to blob and store in IndexedDB
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    const storeTransaction = db.transaction(['images'], 'readwrite');
+                    const store = storeTransaction.objectStore('images');
+                    store.put(blob, url);
+                    console.log(`✅ Cached: ${url}`);
+                  }
+                });
+              }
+            };
+            img.onerror = () => {
+              console.warn(`❌ Failed to preload: ${url}`);
+            };
+            img.src = url;
+          } else {
+            console.log(`✅ Already cached: ${url}`);
+          }
+        };
+      } catch (error) {
+        console.warn(`❌ Error checking cache for: ${url}`, error);
+      }
+    }
+  }, [CDN_BASE_URL]);
+
+  // Load image with IndexedDB caching
+  const loadImage = useCallback(async (src: string): Promise<HTMLImageElement> => {
+    if (!db) {
+      // Fallback to direct load if DB not ready
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
     }
 
+    const transaction = db.transaction(['images'], 'readonly');
+    const store = transaction.objectStore('images');
+    const request = store.get(src);
+
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        // Cache the loaded image
-        loadedImages.current.set(src, img);
-        resolve(img);
+      request.onsuccess = () => {
+        if (request.result) {
+          // Cached image found
+          const blob = request.result;
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+          };
+          img.onerror = reject;
+          img.src = url;
+        } else {
+          // Not cached, load from CDN and cache it
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            // Convert to blob and store in IndexedDB
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const storeTransaction = db.transaction(['images'], 'readwrite');
+                  const store = storeTransaction.objectStore('images');
+                  store.put(blob, src);
+                }
+                resolve(img);
+              });
+            } else {
+              resolve(img); // Fallback if canvas not available
+            }
+          };
+          img.onerror = reject;
+          img.src = src;
+        }
       };
-      img.onerror = reject;
-      img.src = src;
+      request.onerror = reject;
     });
-  }, []);
+  }, [db]);
 
   // Load CV classification data
   const loadClassificationData = useCallback(async () => {
@@ -172,9 +303,9 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   // Load POI images
   const loadPoiImages = useCallback(() => {
     const imageUrls = {
-      church: '/poi-assets/church.png',
-      mage: '/poi-assets/mage-tower.png',
-      village: '/poi-assets/village.png'
+      church: `${CDN_BASE_URL}/poi-assets/church.png`,
+      mage: `${CDN_BASE_URL}/poi-assets/mage-tower.png`,
+      village: `${CDN_BASE_URL}/poi-assets/village.png`
     };
 
     Object.entries(imageUrls).forEach(([key, url]) => {
@@ -184,7 +315,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         console.warn(`Failed to load POI image: ${key}`);
       });
     });
-  }, [loadImage]);
+  }, [loadImage, CDN_BASE_URL]);
 
   // Initialize POI states
   const initializePoiStates = useCallback((pois: POI[]) => {
@@ -528,7 +659,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       const backgroundName = `background_${mapInfo.Special}.png`;
 
       // Load background image
-      const backgroundImg = await loadImage(`/static/${backgroundName}`);
+      const backgroundImg = await loadImage(`${CDN_BASE_URL}/static/${backgroundName}`);
 
       // Set canvas size to match original image
       tempCanvas.width = backgroundImg.width;
@@ -540,7 +671,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       // Draw NightLord
       if (mapInfo.NightLord !== undefined && mapInfo.NightLord !== null) {
         try {
-          const nightlordImg = await loadImage(`/static/nightlord_${mapInfo.NightLord}.png`);
+          const nightlordImg = await loadImage(`${CDN_BASE_URL}/static/nightlord_${mapInfo.NightLord}.png`);
           const previousCompositeOperation = tempCtx.globalCompositeOperation;
           tempCtx.globalCompositeOperation = 'source-over';
           tempCtx.drawImage(nightlordImg, 0, 0);
@@ -554,7 +685,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       const treasureValue = mapInfo.Treasure_800;
       const combinedValue = treasureValue * 10 + mapInfo.Special;
       try {
-        const treasureImg = await loadImage(`/static/treasure_${combinedValue}.png`);
+        const treasureImg = await loadImage(`${CDN_BASE_URL}/static/treasure_${combinedValue}.png`);
         const previousCompositeOperation = tempCtx.globalCompositeOperation;
         tempCtx.globalCompositeOperation = 'source-over';
         tempCtx.drawImage(treasureImg, 0, 0);
@@ -566,7 +697,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       // Draw RotRew
       if (mapInfo.RotRew_500 !== 0) {
         try {
-          const rotrewImg = await loadImage(`/static/RotRew_${mapInfo.RotRew_500}.png`);
+          const rotrewImg = await loadImage(`${CDN_BASE_URL}/static/RotRew_${mapInfo.RotRew_500}.png`);
           const previousCompositeOperation = tempCtx.globalCompositeOperation;
           tempCtx.globalCompositeOperation = 'source-over';
           tempCtx.drawImage(rotrewImg, 0, 0);
@@ -578,7 +709,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       // Draw Start
       try {
-        const startImg = await loadImage(`/static/Start_${mapInfo.Start_190}.png`);
+        const startImg = await loadImage(`${CDN_BASE_URL}/static/Start_${mapInfo.Start_190}.png`);
         const previousCompositeOperation = tempCtx.globalCompositeOperation;
         tempCtx.globalCompositeOperation = 'source-over';
         tempCtx.drawImage(startImg, 0, 0);
@@ -598,7 +729,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
               filename = representativeFile;
             }
 
-            const constructImg = await loadImage(`/static/${filename}`);
+            const constructImg = await loadImage(`${CDN_BASE_URL}/static/${filename}`);
             const coord = mapData.coordinates[construct.coord_index.toString()];
             if (coord) {
               const [x, y] = coord;
@@ -618,7 +749,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       if (mapData.coordinates && mapData.coordinates[day1Loc]) {
         try {
-          const nightCircleImg = await loadImage('/static/night_circle.png');
+          const nightCircleImg = await loadImage(`${CDN_BASE_URL}/static/night_circle.png`);
           const [x, y] = mapData.coordinates[day1Loc];
           const drawX = x - nightCircleImg.width / 2;
           const drawY = y - nightCircleImg.height / 2;
@@ -630,7 +761,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       if (mapData.coordinates && mapData.coordinates[day2Loc]) {
         try {
-          const nightCircleImg = await loadImage('/static/night_circle.png');
+          const nightCircleImg = await loadImage(`${CDN_BASE_URL}/static/night_circle.png`);
           const [x, y] = mapData.coordinates[day2Loc];
           const drawX = x - nightCircleImg.width / 2;
           const drawY = y - nightCircleImg.height / 2;
@@ -828,7 +959,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       setError('生成完整地图失败: ' + (error as Error).message);
       setIsGeneratingMap(false);
     }
-  }, [mapData, loadImage]);
+  }, [mapData, loadImage, CDN_BASE_URL]);
 
   // Update seed filtering with specific states (used for immediate filtering after state changes)
   const updateSeedFilteringWithStates = useCallback((states: Record<number, POIState>) => {
