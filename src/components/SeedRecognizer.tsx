@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,6 +63,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenScale, setFullscreenScale] = useState(1);
+  const [db, setDb] = useState<IDBDatabase | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -98,17 +97,155 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     Noklateo: '“隐城”诺克拉缇欧'
   };
 
-  // Load background image
-  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        resolve(img);
-      };
-      img.onerror = reject;
-      img.src = src;
-    });
+  // Initialize IndexedDB for image caching
+  useEffect(() => {
+    const request = indexedDB.open('ImageCache', 1);
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains('images')) {
+        db.createObjectStore('images');
+      }
+    };
+    request.onsuccess = (event) => {
+      setDb((event.target as IDBOpenDBRequest).result);
+      // Preload background images after DB is ready
+      preloadBackgroundImages((event.target as IDBOpenDBRequest).result);
+    };
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event);
+    };
   }, []);
+
+  // Preload background images
+  const preloadBackgroundImages = useCallback(async (db: IDBDatabase) => {
+    const backgroundUrls = [
+      'https://pic.nightreign-seed.help/static/background_0.png',
+      'https://pic.nightreign-seed.help/static/background_1.png',
+      'https://pic.nightreign-seed.help/static/background_2.png',
+      'https://pic.nightreign-seed.help/static/background_3.png',
+      'https://pic.nightreign-seed.help/static/background_5.png'
+    ];
+
+    const poiUrls = [
+      'https://pic.nightreign-seed.help/poi-assets/church.png',
+      'https://pic.nightreign-seed.help/poi-assets/mage-tower.png',
+      'https://pic.nightreign-seed.help/poi-assets/village.png',
+      'https://pic.nightreign-seed.help/poi-assets/Default-POI.png',
+      'https://pic.nightreign-seed.help/poi-assets/Mountaintop-POI.png',
+      'https://pic.nightreign-seed.help/poi-assets/Crater-POI.png',
+      'https://pic.nightreign-seed.help/poi-assets/RottedWoods-POI.png',
+      'https://pic.nightreign-seed.help/poi-assets/Noklateo-POI.png'
+    ];
+
+    const allUrls = [...backgroundUrls, ...poiUrls];
+
+    console.log('🔄 Checking and preloading images...');
+
+    for (const url of allUrls) {
+      try {
+        const transaction = db.transaction(['images'], 'readonly');
+        const store = transaction.objectStore('images');
+        const request = store.get(url);
+
+        request.onsuccess = () => {
+          if (!request.result) {
+            // Image not cached, preload it
+            console.log(`📥 Preloading: ${url}`);
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              // Convert to blob and store in IndexedDB
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    const storeTransaction = db.transaction(['images'], 'readwrite');
+                    const store = storeTransaction.objectStore('images');
+                    store.put(blob, url);
+                    console.log(`✅ Cached: ${url}`);
+                  }
+                });
+              }
+            };
+            img.onerror = () => {
+              console.warn(`❌ Failed to preload: ${url}`);
+            };
+            img.src = url;
+          } else {
+            console.log(`✅ Already cached: ${url}`);
+          }
+        };
+      } catch (error) {
+        console.warn(`❌ Error checking cache for: ${url}`, error);
+      }
+    }
+  }, []);
+
+  // Load image with IndexedDB caching
+  const loadImage = useCallback(async (src: string): Promise<HTMLImageElement> => {
+    if (!db) {
+      // Fallback to direct load if DB not ready
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    const transaction = db.transaction(['images'], 'readonly');
+    const store = transaction.objectStore('images');
+    const request = store.get(src);
+
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        if (request.result) {
+          // Cached image found
+          const blob = request.result;
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+          };
+          img.onerror = reject;
+          img.src = url;
+        } else {
+          // Not cached, load from CDN and cache it
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            // Convert to blob and store in IndexedDB
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const storeTransaction = db.transaction(['images'], 'readwrite');
+                  const store = storeTransaction.objectStore('images');
+                  store.put(blob, src);
+                }
+                resolve(img);
+              });
+            } else {
+              resolve(img); // Fallback if canvas not available
+            }
+          };
+          img.onerror = reject;
+          img.src = src;
+        }
+      };
+      request.onerror = reject;
+    });
+  }, [db]);
 
   // Load CV classification data
   const loadClassificationData = useCallback(async () => {
