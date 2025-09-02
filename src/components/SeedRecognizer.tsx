@@ -63,6 +63,10 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenScale, setFullscreenScale] = useState(1);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
+  const fullscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [db, setDb] = useState<IDBDatabase | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -613,7 +617,17 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
     setFullscreenScale(1); // Reset scale when toggling
+    dragOffsetRef.current = { x: 0, y: 0 }; // Reset drag offset when toggling
   };
+
+  // Update fullscreen canvas transform
+  const updateFullscreenTransform = useCallback(() => {
+    if (fullscreenCanvasRef.current) {
+      const canvas = fullscreenCanvasRef.current;
+      canvas.style.transform = `scale(${fullscreenScale}) translate(${dragOffsetRef.current.x}px, ${dragOffsetRef.current.y}px)`;
+      canvas.style.cursor = isDraggingRef.current ? 'grabbing' : 'grab';
+    }
+  }, [fullscreenScale]);
 
   // Handle wheel zoom in fullscreen
   const handleFullscreenWheel = useCallback((event: WheelEvent) => {
@@ -1093,6 +1107,11 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
     }
   }, [poiStates, finalSeed, showCompleteMap, backgroundImage, drawCanvas]);
 
+  // Update transform when scale changes
+  useEffect(() => {
+    updateFullscreenTransform();
+  }, [fullscreenScale, updateFullscreenTransform]);
+
   // Handle fullscreen events
   useEffect(() => {
     if (isFullscreen) {
@@ -1258,11 +1277,17 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
         <div 
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8 cursor-pointer"
           onClick={handleBackgroundClick}
+          onMouseMove={(e) => {
+            if (isDraggingRef.current) {
+              e.stopPropagation();
+            }
+          }}
         >
           <div className="relative w-full h-full max-w-[calc(100vw-4rem)] max-h-[calc(100vh-4rem)]">
             <div className="relative w-full h-full rounded-lg border border-yellow-900/30 bg-black/40 overflow-hidden flex items-center justify-center">
               <canvas
                 ref={(el) => {
+                  fullscreenCanvasRef.current = el;
                   if (el && canvasRef.current) {
                     const ctx = el.getContext('2d');
                     const sourceCtx = canvasRef.current.getContext('2d');
@@ -1273,16 +1298,40 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
                     }
                   }
                 }}
-                className="max-w-full max-h-full block transition-transform duration-100"
+                className="max-w-full max-h-full block"
                 style={{
                   width: 'auto',
                   height: '100%',
                   objectFit: 'contain',
-                  transform: `scale(${fullscreenScale})`,
+                  transform: `scale(${fullscreenScale}) translate(${dragOffsetRef.current.x}px, ${dragOffsetRef.current.y}px)`,
                   transformOrigin: 'center center',
-                  cursor: 'zoom-in'
+                  cursor: isDraggingRef.current ? 'grabbing' : 'grab'
                 }}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  isDraggingRef.current = true;
+                  lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+                  updateFullscreenTransform();
+                }}
+                onMouseMove={(e) => {
+                  if (isDraggingRef.current) {
+                    const deltaX = e.clientX - lastMousePosRef.current.x;
+                    const deltaY = e.clientY - lastMousePosRef.current.y;
+                    dragOffsetRef.current.x += deltaX;
+                    dragOffsetRef.current.y += deltaY;
+                    lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+                    updateFullscreenTransform();
+                  }
+                }}
+                onMouseUp={() => {
+                  isDraggingRef.current = false;
+                  updateFullscreenTransform();
+                }}
+                onMouseLeave={() => {
+                  isDraggingRef.current = false;
+                  updateFullscreenTransform();
+                }}
               />
               {/* Close button */}
               <Button
