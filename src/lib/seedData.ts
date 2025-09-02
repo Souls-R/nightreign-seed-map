@@ -62,13 +62,13 @@ const POIS_BY_MAP = {
 };
 
 
-// Map background images (local paths)
+// Map background images (CDN paths)
 const MAP_IMAGES = {
-  Default: "/poi-assets/Default-POI.png",
-  Mountaintop: "/poi-assets/Mountaintop-POI.png",
-  Crater: "/poi-assets/Crater-POI.png",
-  Noklateo: "/poi-assets/Noklateo-POI.png",
-  "Rotted Woods": "/poi-assets/RottedWoods-POI.png"
+  Default: "https://pic.nightreign-seed.help/poi-assets/Default-POI.png",
+  Mountaintop: "https://pic.nightreign-seed.help/poi-assets/Mountaintop-POI.png",
+  Crater: "https://pic.nightreign-seed.help/poi-assets/Crater-POI.png",
+  Noklateo: "https://pic.nightreign-seed.help/poi-assets/Noklateo-POI.png",
+  "Rotted Woods": "https://pic.nightreign-seed.help/poi-assets/RottedWoods-POI.png"
 };
 
 // Constants

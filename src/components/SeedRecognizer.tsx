@@ -67,7 +67,6 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   const [fullscreenScale, setFullscreenScale] = useState(1);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const loadedImages = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const CANVAS_SIZE = 768;
   const ICON_SIZE = 38;
@@ -101,16 +100,9 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
   // Load background image
   const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
-    // Check if image is already loaded
-    if (loadedImages.current.has(src)) {
-      return Promise.resolve(loadedImages.current.get(src)!);
-    }
-
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        // Cache the loaded image
-        loadedImages.current.set(src, img);
         resolve(img);
       };
       img.onerror = reject;
@@ -172,9 +164,9 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   // Load POI images
   const loadPoiImages = useCallback(() => {
     const imageUrls = {
-      church: '/poi-assets/church.png',
-      mage: '/poi-assets/mage-tower.png',
-      village: '/poi-assets/village.png'
+      church: 'https://pic.nightreign-seed.help/poi-assets/church.png',
+      mage: 'https://pic.nightreign-seed.help/poi-assets/mage-tower.png',
+      village: 'https://pic.nightreign-seed.help/poi-assets/village.png'
     };
 
     Object.entries(imageUrls).forEach(([key, url]) => {
@@ -528,7 +520,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       const backgroundName = `background_${mapInfo.Special}.png`;
 
       // Load background image
-      const backgroundImg = await loadImage(`/static/${backgroundName}`);
+      const backgroundImg = await loadImage(`https://pic.nightreign-seed.help/static/${backgroundName}`);
 
       // Set canvas size to match original image
       tempCanvas.width = backgroundImg.width;
@@ -540,7 +532,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       // Draw NightLord
       if (mapInfo.NightLord !== undefined && mapInfo.NightLord !== null) {
         try {
-          const nightlordImg = await loadImage(`/static/nightlord_${mapInfo.NightLord}.png`);
+          const nightlordImg = await loadImage(`https://pic.nightreign-seed.help/static/nightlord_${mapInfo.NightLord}.png`);
           const previousCompositeOperation = tempCtx.globalCompositeOperation;
           tempCtx.globalCompositeOperation = 'source-over';
           tempCtx.drawImage(nightlordImg, 0, 0);
@@ -554,7 +546,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       const treasureValue = mapInfo.Treasure_800;
       const combinedValue = treasureValue * 10 + mapInfo.Special;
       try {
-        const treasureImg = await loadImage(`/static/treasure_${combinedValue}.png`);
+        const treasureImg = await loadImage(`https://pic.nightreign-seed.help/static/treasure_${combinedValue}.png`);
         const previousCompositeOperation = tempCtx.globalCompositeOperation;
         tempCtx.globalCompositeOperation = 'source-over';
         tempCtx.drawImage(treasureImg, 0, 0);
@@ -566,7 +558,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
       // Draw RotRew
       if (mapInfo.RotRew_500 !== 0) {
         try {
-          const rotrewImg = await loadImage(`/static/RotRew_${mapInfo.RotRew_500}.png`);
+          const rotrewImg = await loadImage(`https://pic.nightreign-seed.help/static/RotRew_${mapInfo.RotRew_500}.png`);
           const previousCompositeOperation = tempCtx.globalCompositeOperation;
           tempCtx.globalCompositeOperation = 'source-over';
           tempCtx.drawImage(rotrewImg, 0, 0);
@@ -578,7 +570,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       // Draw Start
       try {
-        const startImg = await loadImage(`/static/Start_${mapInfo.Start_190}.png`);
+        const startImg = await loadImage(`https://pic.nightreign-seed.help/static/Start_${mapInfo.Start_190}.png`);
         const previousCompositeOperation = tempCtx.globalCompositeOperation;
         tempCtx.globalCompositeOperation = 'source-over';
         tempCtx.drawImage(startImg, 0, 0);
@@ -598,7 +590,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
               filename = representativeFile;
             }
 
-            const constructImg = await loadImage(`/static/${filename}`);
+            const constructImg = await loadImage(`https://pic.nightreign-seed.help/static/${filename}`);
             const coord = mapData.coordinates[construct.coord_index.toString()];
             if (coord) {
               const [x, y] = coord;
@@ -618,7 +610,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       if (mapData.coordinates && mapData.coordinates[day1Loc]) {
         try {
-          const nightCircleImg = await loadImage('/static/night_circle.png');
+          const nightCircleImg = await loadImage('https://pic.nightreign-seed.help/static/night_circle.png');
           const [x, y] = mapData.coordinates[day1Loc];
           const drawX = x - nightCircleImg.width / 2;
           const drawY = y - nightCircleImg.height / 2;
@@ -630,7 +622,7 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
 
       if (mapData.coordinates && mapData.coordinates[day2Loc]) {
         try {
-          const nightCircleImg = await loadImage('/static/night_circle.png');
+          const nightCircleImg = await loadImage('https://pic.nightreign-seed.help/static/night_circle.png');
           const [x, y] = mapData.coordinates[day2Loc];
           const drawX = x - nightCircleImg.width / 2;
           const drawY = y - nightCircleImg.height / 2;
