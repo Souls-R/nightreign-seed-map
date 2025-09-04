@@ -29,17 +29,17 @@ export default function Page() {
         <div className="container mx-auto px-4 py-1 md:py-2">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div className="max-w-3xl">
-              <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight flex flex-wrap xl:flex-nowrap xl:whitespace-nowrap items-center gap-2">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-200 drop-shadow-[0_0_8px_rgba(234,179,8,0.25)] max-sm:text-3xl">
+              <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight flex flex-wrap xl:flex-nowrap xl:whitespace-nowrap items-center gap-2 pb-1">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-200 drop-shadow-[0_0_8px_rgba(234,179,8,0.25)] max-sm:text-3xl pb-1">
                   {t(locale, 'title')}
                 </span>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-white to-slate-300 xl:pl-8 max-sm:text-3xl drop-shadow-[0_0_8px_rgba(220,220,220,0.18)]">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-white to-slate-300 xl:pl-8 max-sm:text-3xl drop-shadow-[0_0_8px_rgba(220,220,220,0.18)] pb-1">
                   {t(locale, 'subtitle')}
                 </span>
               </h1>
               <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                <p>{t(locale, 'desc1')}</p>
-                <p>{t(locale, 'desc2')}</p>
+                <p className="md:whitespace-nowrap">{t(locale, 'desc1')}</p>
+                <p className="md:whitespace-nowrap">{t(locale, 'desc2')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
