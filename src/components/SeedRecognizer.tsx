@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { t } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MAPS, POIS_BY_MAP, MAP_IMAGES } from "@/lib/seedData";
@@ -42,11 +43,13 @@ interface MapData {
   names: Record<string, string>;
 }
 
+
 interface SeedRecognizerProps {
   onSeedRecognized?: (seedId: number) => void;
+  locale?: 'zh' | 'en';
 }
 
-export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
+export function SeedRecognizer({ onSeedRecognized, locale = 'zh' }: SeedRecognizerProps) {
   const [selectedMap, setSelectedMap] = useState<string>(MAPS[0]);
   const [selectedNightlord, setSelectedNightlord] = useState<string>('Gladius');
   const [currentPois, setCurrentPois] = useState<POI[]>([]);
@@ -83,24 +86,24 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
   ];
 
   // Minimal i18n: display labels only (values unchanged)
-  const NIGHTLORD_LABELS: Record<string, string> = {
-    Gladius: '三头野兽',
-    Adel: '碎身巨颚',
-    Gnoster: '慧心虫',
-    Maris: '征兆',
-    Libra: '平衡法律的魔物',
-    Fulghor: '暗中飞驰的猎人',
-    Caligo: '雾中裂缝',
-    Heolstor: '黑夜化形者'
+  const NIGHTLORD_LABELS: Record<string, { zh: string; en: string }> = {
+    Gladius: { zh: '三头野兽', en: 'Gladius' },
+    Adel: { zh: '碎身巨颚', en: 'Adel' },
+    Gnoster: { zh: '慧心虫', en: 'Gnoster' },
+    Maris: { zh: '征兆', en: 'Maris' },
+    Libra: { zh: '平衡法律的魔物', en: 'Libra' },
+    Fulghor: { zh: '暗中飞驰的猎人', en: 'Fulghor' },
+    Caligo: { zh: '雾中裂缝', en: 'Caligo' },
+    Heolstor: { zh: '黑夜化形者', en: 'Heolstor' }
   };
 
   // Only translate the four terrains; others remain as original
-  const MAP_LABELS: Record<string, string> = {
-    'Default': '无特异地形',
-    Mountaintop: '山顶',
-    Crater: '火山口',
-    'Rotted Woods': '腐败森林',
-    Noklateo: '“隐城”诺克拉缇欧'
+  const MAP_LABELS: Record<string, { zh: string; en: string }> = {
+    'Default': { zh: '无特异地形', en: 'No Shifting Earth' },
+    Mountaintop: { zh: '山顶', en: 'Mountaintop' },
+    Crater: { zh: '火山口', en: 'Crater' },
+    'Rotted Woods': { zh: '腐败森林', en: 'Rotted Woods' },
+    Noklateo: { zh: '“隐城”诺克拉缇欧', en: 'Noklateo' }
   };
 
   // Initialize IndexedDB for image caching
@@ -1156,19 +1159,19 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
             <CardHeader>
               <CardTitle className="text-amber-200 tracking-wide font-semibold">
-                选择夜王
+                {t(locale, 'chooseNightlord')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
-        {NIGHTLORDS.map((nightlord) => (
+                {NIGHTLORDS.map((nightlord) => (
                   <Button
                     key={nightlord}
                     onClick={() => handleNightlordSelect(nightlord)}
                     variant="ghost"
                     className={selectedNightlord === nightlord ? "rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-4 py-2 text-sm font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors" : "rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors"}
                   >
-          {NIGHTLORD_LABELS[nightlord] ?? nightlord}
+                    {NIGHTLORD_LABELS[nightlord][locale] ?? nightlord}
                   </Button>
                 ))}
               </div>
@@ -1178,19 +1181,19 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
             <CardHeader>
               <CardTitle className="text-amber-200 tracking-wide font-semibold">
-                选择地图类型
+                {t(locale, 'chooseMap')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
-        {MAPS.map((map) => (
+                {MAPS.map((map) => (
                   <Button
                     key={map}
                     onClick={() => handleMapSelect(map)}
                     variant="ghost"
                     className={selectedMap === map ? "rounded-md bg-gradient-to-b from-amber-300 to-yellow-500 text-black px-4 py-2 text-sm font-semibold shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:from-amber-200 hover:to-yellow-400 transition-colors" : "rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors"}
                   >
-          {MAP_LABELS[map] ?? map}
+                    {MAP_LABELS[map][locale] ?? map}
                   </Button>
                 ))}
               </div>
@@ -1200,49 +1203,49 @@ export function SeedRecognizer({ onSeedRecognized }: SeedRecognizerProps) {
           {selectedMap && selectedNightlord && (
             <Card className="border-yellow-900/40 bg-[#0f0e0c]/70 shadow-[0_0_24px_rgba(234,179,8,0.05)]">
               <CardHeader>
-                <CardTitle className="text-amber-200 tracking-wide font-semibold">使用说明</CardTitle>
+                <CardTitle className="text-amber-200 tracking-wide font-semibold">{t(locale, 'instructions_title')}</CardTitle>
               </CardHeader>
               <CardContent className="pt-0 text-sm text-amber-100/80 space-y-4">
                 <div className="flex items-center gap-3">
-                  <span>对比游戏地图，在右侧的相应位置标注一些建筑以识别种子</span>
+                  <span>{t(locale, 'instructions')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="inline-block w-3 h-3 rounded-full bg-[#ecef41]"></span>
-                  <span>左键：标记教堂，再次点击取消</span>
+                  <span>{t(locale, 'leftClick')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="inline-block w-3 h-3 rounded-full bg-purple-500"></span>
-                  <span>右键：在法师塔 / 村庄 / 未知之间循环</span>
+                  <span>{t(locale, 'rightClick')}</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <Button onClick={resetMap} variant="outline" size="sm" className="rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors">重置地图</Button>
+                  <Button onClick={resetMap} variant="outline" size="sm" className="rounded-md border border-yellow-800/50 bg-[#0f0e0c]/70 text-amber-200 px-4 py-2 text-sm font-medium hover:bg-yellow-900/20 hover:border-yellow-700/70 hover:text-amber-300 transition-colors">{t(locale, 'reset')}</Button>
                   <div className="text-xs text-amber-200/80 text-right space-y-1">
                     {loading && (
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
-                        <span>生成中...</span>
+                        <span>{t(locale, 'loading')}</span>
                       </div>
                     )}
                     {error && <p className="text-red-400">{error}</p>}
                     {!loading && !error && (
                       <>
                       {showCompleteMap ? (
-                        <div className="text-lg">✅ 种子ID: <span className="font-bold text-amber-300 text-xl">{finalSeed?.seedId}</span></div>
+                        <div className="text-lg">✅ {t(locale, 'seedId')}: <span className="font-bold text-amber-300 text-xl">{finalSeed?.seedId}</span></div>
                       ) : possibleSeeds.length > 1 ? (
-                        <div className="text-lg">🔍 匹配种子: <span className="font-bold text-amber-300 text-xl">{possibleSeeds.length}</span></div>
+                        <div className="text-lg">🔍 {t(locale, 'matchingSeeds')}: <span className="font-bold text-amber-300 text-xl">{possibleSeeds.length}</span></div>
                       ) : possibleSeeds.length === 1 ? (
                         <div className="space-y-1 text-lg">
-                        <div>识别成功！种子ID: <span className="font-bold text-amber-300 text-xl">{possibleSeeds[0].seedId}</span></div>
-                        {isGeneratingMap && (
-                          <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
-                          <span className="text-base">首次生成地图下载素材较慢请耐心等待..</span>
-                          </div>
-                        )}
+                          <div>{t(locale, 'success')}: <span className="font-bold text-amber-300 text-xl">{possibleSeeds[0].seedId}</span></div>
+                          {isGeneratingMap && (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-300"></div>
+                              <span className="text-base">{t(locale, 'wait')}</span>
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <div className="text-lg">未发现任何种子，已标记: <span className="font-bold text-amber-300 text-xl">{Object.values(poiStates).filter(state => state !== 'dot').length}</span> 个建筑地点</div>
+                        <div className="text-lg">{t(locale, 'notFound')}: <span className="font-bold text-amber-300 text-xl">{Object.values(poiStates).filter(state => state !== 'dot').length}</span> {t(locale, 'buildings')}</div>
                       )}
                       </>
                     )}
